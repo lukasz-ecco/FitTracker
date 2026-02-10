@@ -16,6 +16,9 @@ class Muscles
     #[ORM\Column(length: 150)]
     private ?string $name = null;
 
+    #[ORM\ManyToOne(inversedBy: 'muscles')]
+    private ?BodyParts $bodyPart = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -29,6 +32,18 @@ class Muscles
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getBodyPart(): ?BodyParts
+    {
+        return $this->bodyPart;
+    }
+
+    public function setBodyPart(?BodyParts $bodyPart): static
+    {
+        $this->bodyPart = $bodyPart;
 
         return $this;
     }

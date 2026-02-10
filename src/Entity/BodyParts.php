@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\BodyPartsRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: BodyPartsRepository::class)]
@@ -15,6 +17,17 @@ class BodyParts
 
     #[ORM\Column(length: 255)]
     private ?string $name = null;
+
+    /**
+     * @var Collection<int, Muscles>
+     */
+    #[ORM\OneToMany(targetEntity: Muscles::class, mappedBy: 'bodyPart')]
+    private Collection $muscles;
+
+    public function __construct()
+    {
+        $this->muscles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -29,6 +42,36 @@ class BodyParts
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Muscles>
+     */
+    public function getMuscles(): Collection
+    {
+        return $this->muscles;
+    }
+
+    public function addMuscle(Muscles $muscle): static
+    {
+        if (!$this->muscles->contains($muscle)) {
+            $this->muscles->add($muscle);
+            $muscle->setBodyPart($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMuscle(Muscles $muscle): static
+    {
+        if ($this->muscles->removeElement($muscle)) {
+            // set the owning side to null (unless already changed)
+            if ($muscle->getBodyPart() === $this) {
+                $muscle->setBodyPart(null);
+            }
+        }
 
         return $this;
     }
