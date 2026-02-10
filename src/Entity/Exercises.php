@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\ExercisesRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 
 #[ORM\Entity(repositoryClass: ExercisesRepository::class)]
 class Exercises
@@ -21,6 +23,17 @@ class Exercises
 
     #[ORM\Column(length: 150)]
     private ?string $type = null;
+
+    /**
+     * @var Collection<int, ExerciseMuscle>
+     */
+    #[ORM\OneToMany(targetEntity: ExerciseMuscle::class, mappedBy: 'Exercise')]
+    private Collection $exerciseMuscles;
+
+    public function __construct()
+    {
+        $this->exerciseMuscles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -59,6 +72,36 @@ class Exercises
     public function setType(string $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ExerciseMuscle>
+     */
+    public function getExerciseMuscles(): Collection
+    {
+        return $this->exerciseMuscles;
+    }
+
+    public function addExerciseMuscle(ExerciseMuscle $exerciseMuscle): static
+    {
+        if (!$this->exerciseMuscles->contains($exerciseMuscle)) {
+            $this->exerciseMuscles->add($exerciseMuscle);
+            $exerciseMuscle->setExercise($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExerciseMuscle(ExerciseMuscle $exerciseMuscle): static
+    {
+        if ($this->exerciseMuscles->removeElement($exerciseMuscle)) {
+            // set the owning side to null (unless already changed)
+            if ($exerciseMuscle->getExercise() === $this) {
+                $exerciseMuscle->setExercise(null);
+            }
+        }
 
         return $this;
     }
