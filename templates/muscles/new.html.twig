@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Utwórz nowy mięsień{% endblock %}
+
+{% block body %}
+    <h1>Utwórz nowy mięsień</h1>
+
+    {{ include('muscles/_form.html.twig') }}
+
+    <a href="{{ path('app_muscles_index') }}">Wróć do listy</a>
+{% endblock %}

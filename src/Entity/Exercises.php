@@ -19,7 +19,7 @@ class Exercises
     private ?string $name = null;
 
     #[ORM\Column]
-    private ?int $diffuculty = null;
+    private ?int $difficulty = null;
 
     #[ORM\Column(length: 150)]
     private ?string $type = null;
@@ -52,14 +52,14 @@ class Exercises
         return $this;
     }
 
-    public function getDiffuculty(): ?int
+    public function getDifficulty(): ?int
     {
-        return $this->diffuculty;
+        return $this->difficulty;
     }
 
-    public function setDiffuculty(int $diffuculty): static
+    public function setDifficulty(int $difficulty): static
     {
-        $this->diffuculty = $diffuculty;
+        $this->difficulty = $difficulty;
 
         return $this;
     }

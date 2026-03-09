@@ -11,7 +11,6 @@ final class MainPageController extends AbstractController
     #[Route('/', name: 'app_main_page')]
     public function index(): Response
     {
-        $test = '1';
         return $this->render('main_page/index.html.twig', [
             'controller_name' => 'MainPageController',
         ]);

@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edytuj mięśnie{% endblock %}
+
+{% block body %}
+    <h1>Edytuj mięśnie</h1>
+
+    {{ include('muscles/_form.html.twig', {'button_label': 'Zapisz zmiany'}) }}
+
+    <a href="{{ path('app_muscles_index') }}">Wróć do listy</a>
+
+    {{ include('muscles/_delete_form.html.twig') }}
+{% endblock %}

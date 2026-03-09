@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mięśnie - lista{% endblock %}
+
+{% block body %}
+    <h1>Lista mięśni</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nazwa</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for muscle in muscles %}
+            <tr>
+                <td>{{ muscle.id }}</td>
+                <td>{{ muscle.name }}</td>
+                <td>
+                    <a href="{{ path('app_muscles_show', {'id': muscle.id}) }}">Wyświetl</a>
+                    <a href="{{ path('app_muscles_edit', {'id': muscle.id}) }}">Edytuj</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">Brak rekordów</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_muscles_new') }}">Utwórz nowy mięsień</a>
+{% endblock %}
