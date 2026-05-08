@@ -1,0 +1,6 @@
+# translations/security.pl.yaml
+
+"Invalid credentials.": "Nieprawidłowy adres e-mail lub hasło."
+"Account is disabled.": "Twoje konto zostało zablokowane."
+"Account is locked.": "Konto jest tymczasowo zablokowane."
+"Too many failed login attempts, please try again later.": "Zbyt wiele nieudanych prób logowania. Spróbuj ponownie później."

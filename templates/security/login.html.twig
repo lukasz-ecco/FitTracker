@@ -1,28 +1,72 @@
-{% extends 'base.html.twig' %}
+{% extends 'base_minimal.html.twig' %}
 
-{% block title %}Log in!{% endblock %}
+{% block title %}Logowanie{% endblock %}
 
 {% block body %}
-<form method="post">
-    {% if error %}
-        <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-    {% endif %}
+<div class="w-100" style="max-width: 420px; padding: 15px; margin-top: -10vh;">
+    
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body p-5">
+            
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">Witaj ponownie! 👋</h2>
+                <p class="text-muted">Zaloguj się do swojego konta</p>
+            </div>
 
-    {% if app.user %}
-        <div class="mb-3">
-            You are logged in as {{ app.user.userIdentifier }}, <a href="{{ logout_path() }}">Logout</a>
+            {# --- SEKCJA KOMUNIKATÓW O BŁĘDACH --- #}
+            {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <!-- Ikonka SVG (wykrzyknik) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-3" viewBox="0 0 16 16">
+                        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                    </svg>
+                    <div>
+                        {# Symfony automatycznie tłumaczy błędy logowania (np. zły login/hasło) #}
+                        {{ error.messageKey|trans(error.messageData, 'security') }}
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
+                </div>
+            {% endif %}
+
+            {# --- FORMULARZ --- #}
+            <form method="post" action="{{ path('app_login') }}">
+                
+                {# Pole Email z "pływającą" etykietą #}
+                <div class="form-floating mb-3">
+                    <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus placeholder="name@example.com">
+                    <label for="inputEmail">Adres e-mail</label>
+                </div>
+
+                {# Pole Hasło #}
+                <div class="form-floating mb-4">
+                    <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required placeholder="Hasło">
+                    <label for="inputPassword">Hasło</label>
+                </div>
+
+                {# Zabezpieczenie CSRF (wymagane przez Symfony ze względów bezpieczeństwa) #}
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                {# Opcjonalny checkbox "Zapamiętaj mnie" #}
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" name="_remember_me" id="rememberMe">
+                    <label class="form-check-label text-muted" for="rememberMe">
+                        Zapamiętaj mnie na tym urządzeniu
+                    </label>
+                </div>
+
+                <button class="btn btn-primary w-100 py-2 fs-5" type="submit">
+                    Zaloguj się
+                </button>
+            </form>
+
         </div>
-    {% endif %}
-
-    <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
-    <label for="inputEmail">Email</label>
-    <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
-    <label for="inputPassword">Password</label>
-    <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
-    <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
-
-    <button class="btn btn-lg btn-primary" type="submit">
-        Sign in
-    </button>
-</form>
+        
+        {# Dolna sekcja (poza głównym białym tłem, w stopce karty) #}
+        <div class="card-footer bg-light text-center py-3 border-0 rounded-bottom-4">
+            <span class="text-muted">Nie masz konta?</span> 
+            <a href="#" class="text-decoration-none fw-bold">Zarejestruj się</a>
+        </div>
+    </div>
+    
+</div>
 {% endblock %}

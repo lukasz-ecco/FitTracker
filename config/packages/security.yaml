@@ -22,8 +22,9 @@ security:
             custom_authenticator: App\Security\FitTrackerCustomAuthenticator
             logout:
                 path: app_logout
-                # where to redirect after logout
-                # target: app_any_route
+                invalidate_session: true
+                # Gdzie ma przekierować po wylogowaniu (zazwyczaj na login)
+                target: app_login
 
             remember_me:
                 secret: '%kernel.secret%'

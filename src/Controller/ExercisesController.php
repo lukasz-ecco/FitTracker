@@ -10,9 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Request;
 
+#[Route('/exercises')]
 final class ExercisesController extends AbstractController
 {
-    #[Route('/exercises', name: 'app_exercises_index')]
+    #[Route(name: 'app_exercises_index')]
     public function index(EntityManagerInterface $entityManager): Response
     {
         $exercises = $entityManager->getRepository(Exercises::class)->findAll();
@@ -23,7 +24,7 @@ final class ExercisesController extends AbstractController
         ]);
     }
 
-    #[Route('/exercises/add', name: 'app_exercises_new')]
+    #[Route('add', name: 'app_exercises_new')]
     public function addExercise(Request $request, EntityManagerInterface $entityManager): Response
     {
         $exercise = new Exercises();
@@ -42,7 +43,7 @@ final class ExercisesController extends AbstractController
         ]);
     }
 
-    #[Route('/exercises/edit/{id}', name: 'app_exercises_edit')]
+    #[Route('{id}/edit', name: 'app_exercises_edit')]
     public function editExercise(Exercises $id, Request $request, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(ExerciseType::class, $id);

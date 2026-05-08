@@ -48,7 +48,7 @@ class FitTrackerCustomAuthenticator extends AbstractLoginFormAuthenticator
             return new RedirectResponse($targetPath);
         }
 
-        return new RedirectResponse($this->urlGenerator->generate('/'));
+        return new RedirectResponse($this->urlGenerator->generate('app_main_page'));
     }
 
     protected function getLoginUrl(Request $request): string
