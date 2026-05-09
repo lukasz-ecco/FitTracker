@@ -43,6 +43,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?int $age = null;
 
+    #[ORM\Column(length: 1, nullable: true)]
+    private ?int $gender = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?int $height = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?int $weight = null;
+
+    #[ORM\Column(length: 150, nullable: true)]
+    private ?string $profilePicture = null;
+    
+
     #[ORM\Column]
     private bool $isVerified = false;
 
@@ -171,6 +184,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): static
     {
         $this->isVerified = $isVerified;
+
+        return $this;
+    }
+
+    public function getGender(): ?int
+    {
+        return $this->gender;
+    }
+
+    public function setGender(int $gender): static
+    {
+        $this->gender = $gender;
+
+        return $this;
+    }
+
+    public function getHeight(): ?int
+    {
+        return $this->height;
+    }
+
+    public function setHeight(int $height): static
+    {
+        $this->height = $height;
+
+        return $this;
+    }
+
+    public function getWeight(): ?int
+    {
+        return $this->weight;
+    }
+
+    public function setWeight(int $weight): static
+    {
+        $this->weight = $weight;
+
+        return $this;
+    }
+
+    public function getProfilePicture(): ?string
+    {
+        return $this->profilePicture;
+    }
+
+    public function setProfilePicture(string $profilePicture): static
+    {
+        $this->profilePicture = $profilePicture;
 
         return $this;
     }

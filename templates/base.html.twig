@@ -27,23 +27,43 @@
                 </div>
                 
                 <div class="sidebar-nav">
-                    <a href="#" class="active">🏠 Strona Główna</a>
-                    <a href="#">👤 Twój Profil</a>
+                    {% set current_route = app.request.attributes.get('_route') %}
+                    <a href="#" class="{{ current_route == 'app_main_page' ? 'active' : '' }}">🏠 Strona Główna</a>
+
+                    {% set is_profile_active = current_route in ['app_profile', 'app_measurements', 'app_training_goals', 'app_training_plan', 'app_training_history', 'app_account_settings'] %}
                     
+                    <a href="#profileSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="{{ is_profile_active ? 'active' : '' }} dropdown-toggle {% if is_profile_active %}show{% endif %}">
+                        <span>👤 Twój Profil</span>
+                    </a>
+                    <!-- Ukryte podmenu (id musi pasować do href wyżej) -->
+                    <div class="collapse" id="profileSubmenu">
+                        <ul class="submenu-list">
+                            <li><a href="app_profile" class="{{ current_route == 'app_profile' ? 'active' : '' }}">Profil</a></li>
+                            <li><a href="app_measurements" class="{{ current_route == 'app_measurements' ? 'active' : '' }}">Pomiary</a></li>
+                            <li><a href="app_training_goals" class="{{ current_route == 'app_training_goals' ? 'active' : '' }}">Cele treningowe</a></li>
+                            <li><a href="app_training_plan" class="{{ current_route == 'app_training_plan' ? 'active' : '' }}">Plan treningowy</a></li>
+                            <li><a href="app_training_history" class="{{ current_route == 'app_training_history' ? 'active' : '' }}">Historia treningów</a></li>
+                            <li><a href="app_account_settings" class="{{ current_route == 'app_account_settings' ? 'active' : '' }}">Ustawienia konta</a></li>
+                        </ul>
+                    </div>
+
+                    <a href="#" class="{{ current_route == 'app_exercises' ? 'active' : '' }}">🏋️ Lista wszystkich ćwiczeń</a>
+                    
+                    {% set is_notifications_active = current_route in ['app_all_notifications', 'app_unread_notifications', 'app_alert_settings'] %}
                     <!-- Element z rozwijanym menu -->
-                    <a href="#notificationsSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                    <a href="#notificationsSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="{{ is_notifications_active ? 'active' : '' }} dropdown-toggle {% if is_notifications_active %}show{% endif %}"">
                         <span>🔔 Powiadomienia</span>
                     </a>
                     <!-- Ukryte podmenu (id musi pasować do href wyżej) -->
                     <div class="collapse" id="notificationsSubmenu">
                         <ul class="submenu-list">
-                            <li><a href="#">Wszystkie powiadomienia</a></li>
-                            <li><a href="#">Nieprzeczytane</a></li>
-                            <li><a href="#">Ustawienia alertów</a></li>
+                            <li><a href="app_all_notifications" class="{{ current_route == 'app_all_notifications' ? 'active' : '' }}">Wszystkie powiadomienia</a></li>
+                            <li><a href="app_unread_notifications" class="{{ current_route == 'app_unread_notifications' ? 'active' : '' }}">Nieprzeczytane</a></li>
+                            <li><a href="app_alert_settings" class="{{ current_route == 'app_alert_settings' ? 'active' : '' }}">Ustawienia alertów</a></li>
                         </ul>
                     </div>
 
-                    <a href="#">⚙️ Ustawienia</a>
+                    <a href="#" class="{{ current_route == 'app_settings' ? 'active' : '' }}">⚙️ Ustawienia</a>
                 </div>
                 
                 <div class="sidebar-nav" style="margin-top: auto;">

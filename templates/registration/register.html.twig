@@ -1,23 +1,78 @@
 {% extends 'base_minimal.html.twig' %}
 
-{% block title %}Register{% endblock %}
+{% block title %}Zarejestruj się{% endblock %}
 
 {% block body %}
-    {% for flash_error in app.flashes('verify_email_error') %}
-        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
-    {% endfor %}
+<div class="w-100" style="max-width: 420px; padding: 15px; margin-top: -10vh;">
+    
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body p-5">
+            
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">Dołącz do nas! 🚀</h2>
+                <p class="text-muted">Załóż darmowe konto</p>
+            </div>
 
-    <h1>Register</h1>
+            {# --- KOMUNIKATY O BŁĘDACH (np. przy weryfikacji email) --- #}
+            {% for flash_error in app.flashes('verify_email_error') %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ flash_error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
+                </div>
+            {% endfor %}
 
-    {{ form_errors(registrationForm) }}
+            {# --- GŁÓWNE BŁĘDY FORMULARZA --- #}
+            {% if not registrationForm.vars.valid %}
+                <div class="alert alert-danger">
+                    Proszę poprawić błędy w formularzu poniżej.
+                </div>
+            {% endif %}
 
-    {{ form_start(registrationForm) }}
-        {{ form_row(registrationForm.email) }}
-        {{ form_row(registrationForm.plainPassword, {
-            label: 'Password'
-        }) }}
-        {{ form_row(registrationForm.agreeTerms) }}
+            {# Rozpoczęcie formularza z wyłączeniem domyślnej walidacji przeglądarki (żeby ładnie pokazywać polskie błędy z Symfony) #}
+            {{ form_start(registrationForm, {'attr': {'novalidate': 'novalidate'}}) }}
+                
+                {# Pole Email z "pływającą" etykietą #}
+                <div class="form-floating mb-3">
+                    {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control', 'placeholder': 'name@example.com'}}) }}
+                    {{ form_label(registrationForm.email, 'Adres e-mail') }}
+                    <div class="text-danger small mt-1">
+                        {{ form_errors(registrationForm.email) }}
+                    </div>
+                </div>
 
-        <button type="submit" class="btn">Register</button>
-    {{ form_end(registrationForm) }}
+                {# Pole Hasło #}
+                <div class="form-floating mb-4">
+                    {{ form_widget(registrationForm.plainPassword, {'attr': {'class': 'form-control', 'placeholder': 'Hasło'}}) }}
+                    {{ form_label(registrationForm.plainPassword, 'Hasło') }}
+                    <div class="text-danger small mt-1">
+                        {{ form_errors(registrationForm.plainPassword) }}
+                    </div>
+                </div>
+
+                {# Checkbox - Akceptacja regulaminu #}
+                <div class="form-check mb-4 d-flex justify-content-start align-items-center gap-2">
+                    {{ form_widget(registrationForm.agreeTerms, {'attr': {'class': 'form-check-input mt-0'}}) }}
+                    {{ form_label(registrationForm.agreeTerms, 'Akceptuję regulamin serwisu', {'label_attr': {'class': 'form-check-label text-muted'}}) }}
+                </div>
+                {# Błąd dla checkboxa (wyświetli się pod nim, jeśli użytkownik go nie zaznaczy) #}
+                <div class="text-danger small mb-3" style="margin-top: -15px;">
+                    {{ form_errors(registrationForm.agreeTerms) }}
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fs-5">
+                    Zarejestruj się
+                </button>
+                
+            {{ form_end(registrationForm) }}
+
+        </div>
+        
+        {# Dolna sekcja (stopka) z linkiem powrotnym #}
+        <div class="card-footer bg-light text-center py-3 border-0 rounded-bottom-4">
+            <span class="text-muted">Masz już konto?</span> 
+            <a href="{{ path('app_login') }}" class="text-decoration-none fw-bold">Zaloguj się</a>
+        </div>
+    </div>
+    
+</div>
 {% endblock %}
