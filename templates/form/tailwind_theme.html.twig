@@ -1,0 +1,94 @@
+{# Nadpisujemy domyślny wygląd rozwijanej listy (select) #}
+{% block choice_widget_collapsed %}
+    <div x-data="{
+            open: false,
+            selectedValue: '{{ value }}',
+            options: [
+                {% for choice in choices %}
+                    { value: '{{ choice.value }}', label: '{{ choice.label }}' },
+                {% endfor %}
+            ],
+            get selectedLabel() {
+                let option = this.options.find(o => o.value === this.selectedValue);
+                return option ? option.label : '{% if placeholder is defined and placeholder is not empty %}{{ placeholder }}{% else %}Wybierz...{% endif %}';
+            },
+            selectOption(val) {
+                this.selectedValue = val;
+                this.open = false;
+                $refs.realSelect.value = val;
+            }
+        }" class="relative w-full">
+
+        {# Ukryty, prawdziwy select #}
+        <select x-ref="realSelect" name="{{ full_name }}" id="{{ id }}" class="hidden">
+            {% if placeholder is defined and placeholder is not empty %}
+                <option value="">{{ placeholder }}</option>
+            {% endif %}
+            {% for choice in choices %}
+                <option value="{{ choice.value }}" {% if choice.value == value %}selected="selected"{% endif %}>
+                    {{ choice.label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        {# Wizualny Przycisk #}
+        <button type="button" @click="open = !open" @click.away="open = false"
+                class="border border-gray-300 rounded-xl px-4 py-3 bg-white w-full text-left transition-all duration-150 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none shadow-inner flex justify-between items-center cursor-pointer">
+            <span x-text="selectedLabel" class="text-gray-700"></span>
+            <svg :class="{'rotate-180': open}" class="w-5 h-5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+
+        {# Rozwijana Lista #}
+        <ul x-show="open" x-transition.opacity.duration.200ms style="display: none;"
+            class="absolute z-10 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl py-2 max-h-60 overflow-auto">
+            
+            <template x-for="option in options" :key="option.value">
+                <li @click="selectOption(option.value)"
+                    class="px-5 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors flex items-center justify-between"
+                    :class="{'bg-blue-50 text-blue-700 font-bold': selectedValue === option.value, 'text-gray-700': selectedValue !== option.value}">
+                    <span x-text="option.label"></span>
+                    <svg x-show="selectedValue === option.value" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </li>
+            </template>
+            
+        </ul>
+    </div>
+{% endblock %}
+
+{# Nadpisujemy domyślny wygląd prostych inputów (text, number, etc.) #}
+
+{% block form_widget_simple %}
+    {# Ustalamy domyślne klasy Tailwinda dla wszystkich inputów #}
+    {% set default_class = 'border border-gray-300 rounded-xl px-4 py-3 bg-white w-full transition-all duration-150 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none shadow-inner' %}
+    
+    {# Łączymy nasze bazowe klasy z ewentualnymi klasami przekazanymi w wywołaniu form_widget() #}
+    {% set attr = attr|merge({'class': (attr.class|default('') ~ ' ' ~ default_class)|trim}) %}
+    
+    {# Renderujemy ostateczny input korzystając z wbudowanych funkcji Symfony do atrybutów #}
+    {% set type = type|default('text') %}
+    <input type="{{ type }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
+{% endblock form_widget_simple %}
+
+{# Nadpisujemy domyślny wygląd etykiet (label) #}
+{% block form_label %}
+    {% if label is not same as(false) %}
+        {% set label_attr = label_attr|merge({'class': (label_attr.class|default('') ~ ' block text-sm font-semibold text-gray-700 mb-1.5')|trim}) %}
+        
+        <label {% with { attr: label_attr } %}{{ block('attributes') }}{% endwith %}>
+            {# Symfony domyślnie tłumaczy labele, zostawiamy ten mechanizm #}
+            {{ translation_domain is same as(false) ? label : label|trans(label_translation_parameters, translation_domain) }}
+        </label>
+    {% endif %}
+{% endblock form_label %}
+
+{# Nadpisujemy domyślny wygląd przycisku submit #}
+
+{% block submit_widget %}
+    {% set default_class = 'px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all duration-200 transform hover:-translate-y-0.5' %}
+    {% set attr = attr|merge({'class': (attr.class|default('') ~ ' ' ~ default_class)|trim}) %}
+    {% set type = type|default('submit') %}
+    
+    <button type="{{ type }}" {{ block('button_attributes') }}>
+        {{ translation_domain is same as(false) ? label : label|trans(label_translation_parameters, translation_domain) }}
+    </button>
+{% endblock submit_widget %}

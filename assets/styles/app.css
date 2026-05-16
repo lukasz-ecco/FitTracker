@@ -1,3 +1,32 @@
-body {
-    background-color: skyblue;
+@import "tailwindcss";
+
+@layer components {
+    /* 1. Główne Inputy (tekstowe, email, hasło) */
+    .form-input-styled {
+        @apply border border-gray-300 rounded-xl px-4 py-3 bg-white w-full transition-all duration-150 outline-none shadow-inner;
+        @apply focus:border-blue-400 focus:ring-4 focus:ring-blue-100;
+    }
+
+    /* 2. Główny przycisk (Primary Button) */
+    .btn-primary {
+        @apply px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all duration-200 transform cursor-pointer;
+        @apply hover:-translate-y-0.5 active:translate-y-0;
+    }
+
+    .btn-error-icon {
+        @apply w-5 h-5 mr-2 -ml-1;
+    }
+
+    /* --- Opcjonalnie: style dla okienka z błędami z poprzedniej wiadomości --- */
+    .alert-error {
+        @apply relative w-full max-w-md p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm;
+    }
+
+    .alert-error-title {
+        @apply text-sm font-semibold text-red-800;
+    }
+
+    .alert-error-list {
+        @apply pl-5 space-y-1 list-disc marker:text-red-400 mt-2 text-sm text-red-700;
+    }
 }

@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Profil użytkownika{% endblock %}
+
+{% block body %}
+
+    {{ include('user_info/_form.html.twig', {'button_label': 'Zapisz zmiany'}) }}
+
+{% endblock %}
