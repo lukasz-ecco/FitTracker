@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Meseurments index{% endblock %}
+
+{% block body %}
+    <h1>Meseurments index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Size</th>
+                <th>Date</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for meseurment in meseurments %}
+            <tr>
+                <td>{{ meseurment.id }}</td>
+                <td>{{ meseurment.Size }}</td>
+                <td>{{ meseurment.date ? meseurment.date|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_meseurments_show', {'id': meseurment.id}) }}">show</a>
+                    <a href="{{ path('app_meseurments_edit', {'id': meseurment.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_meseurments_new') }}">Create new</a>
+{% endblock %}

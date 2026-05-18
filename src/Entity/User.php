@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -63,6 +65,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     #[Ignore]
     private bool $isVerified = false;
+
+    /**
+     * @var Collection<int, Meseurments>
+     */
+    #[ORM\OneToMany(targetEntity: Meseurments::class, mappedBy: 'User')]
+    private Collection $meseurments;
+
+    public function __construct()
+    {
+        $this->meseurments = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -237,6 +250,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setProfilePicture(string $profilePicture): static
     {
         $this->profilePicture = $profilePicture;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Meseurments>
+     */
+    public function getMeseurments(): Collection
+    {
+        return $this->meseurments;
+    }
+
+    public function addMeseurment(Meseurments $meseurment): static
+    {
+        if (!$this->meseurments->contains($meseurment)) {
+            $this->meseurments->add($meseurment);
+            $meseurment->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMeseurment(Meseurments $meseurment): static
+    {
+        if ($this->meseurments->removeElement($meseurment)) {
+            // set the owning side to null (unless already changed)
+            if ($meseurment->getUser() === $this) {
+                $meseurment->setUser(null);
+            }
+        }
 
         return $this;
     }
