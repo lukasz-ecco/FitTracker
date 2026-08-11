@@ -29,4 +29,42 @@
     .alert-error-list {
         @apply pl-5 space-y-1 list-disc marker:text-red-400 mt-2 text-sm text-red-700;
     }
+
+    .table-wrapper {
+        @apply relative overflow-x-auto shadow-md sm:rounded-lg border border-gray-200;
+    }
+
+    /* Główna tabela */
+    .data-table {
+        @apply w-full text-sm text-left text-gray-500;
+    }
+
+    /* Nagłówki */
+    .data-table thead {
+        @apply text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200;
+    }
+
+    .data-table th {
+        @apply px-6 py-3 font-semibold;
+    }
+
+    /* Wiersze w tabeli */
+    .data-table tbody tr {
+        @apply bg-white border-b hover:bg-gray-50 transition-colors duration-200;
+    }
+
+    /* Komórki */
+    .data-table td {
+        @apply px-6 py-4 whitespace-nowrap;
+    }
+
+    /* Tekst wyróżniony (np. ID) */
+    .data-table td.highlight {
+        @apply font-medium text-gray-900;
+    }
+
+    /* Linki w akcjach */
+    .action-link {
+        @apply font-medium text-blue-600 hover:text-blue-800 hover:underline;
+    }
 }

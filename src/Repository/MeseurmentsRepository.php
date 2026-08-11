@@ -26,16 +26,16 @@ class MeseurmentsRepository extends ServiceEntityRepository
             $subQuery = $this->createQueryBuilder('sub')
                 ->select('MAX(sub.date)')
                 ->where('sub.User = :val')
-                ->andWhere('sub.Muscle = m.Muscle');
+                ->andWhere('sub.bodyPart = m.bodyPart');
 
             
            return $query
-                ->join('m.Muscle', 'mu')
-                ->addSelect('mu')
+                ->join('m.bodyPart', 'bp')
+                ->addSelect('bp')
                 ->where('m.User = :val')
                 ->andWhere($query->expr()->eq('m.date', '(' . $subQuery->getDQL() . ')'))
                 ->setParameter('val', $value)
-                ->orderBy('mu.name', 'ASC')
+                ->orderBy('bp.name', 'ASC')
                 ->getQuery()
                 ->getResult()
            ;

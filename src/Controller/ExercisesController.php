@@ -24,7 +24,7 @@ final class ExercisesController extends AbstractController
         ]);
     }
 
-    #[Route('add', name: 'app_exercises_new')]
+    #[Route('/add', name: 'app_exercises_new')]
     public function addExercise(Request $request, EntityManagerInterface $entityManager): Response
     {
         $exercise = new Exercises();
@@ -39,14 +39,14 @@ final class ExercisesController extends AbstractController
         }
 
         return $this->render('exercises/add.html.twig', [
-            'form' => $form->createView(),
+            'form' => $form,
         ]);
     }
 
-    #[Route('{id}/edit', name: 'app_exercises_edit')]
-    public function editExercise(Exercises $id, Request $request, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}/edit', name: 'app_exercises_edit')]
+    public function editExercise(Exercises $exercise, Request $request, EntityManagerInterface $entityManager): Response
     {
-        $form = $this->createForm(ExerciseType::class, $id);
+        $form = $this->createForm(ExerciseType::class, $exercise);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -56,7 +56,7 @@ final class ExercisesController extends AbstractController
         }
 
         return $this->render('exercises/edit.html.twig', [
-            'form' => $form->createView(),
+            'form' => $form,
         ]);
     }
 }

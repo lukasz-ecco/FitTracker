@@ -14,9 +14,12 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 #[Route('/user/info')]
 final class UserInfoController extends AbstractController
 {
-    #[Route('/{id}/edit', name: 'app_user_info_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, User $user, EntityManagerInterface $entityManager): Response
+    #[Route('/edit', name: 'app_user_info_edit', methods: ['GET', 'POST'])]
+    public function edit(Request $request, EntityManagerInterface $entityManager): Response
     {
+        /** @var User $user */
+        $user = $this->getUser();
+
         $form = $this->createForm(UserType::class, $user);
         $form->handleRequest($request);
 

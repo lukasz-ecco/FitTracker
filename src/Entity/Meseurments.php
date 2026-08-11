@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\MeseurmentsRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MeseurmentsRepository::class)]
 class Meseurments
@@ -17,15 +18,22 @@ class Meseurments
     private ?float $Size = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Muscles $Muscle = null;
+    #[ORM\JoinColumn(name: 'body_part_id', referencedColumnName: 'id', nullable: false)]
+    private ?BodyParts $bodyPart = null;
 
     #[ORM\ManyToOne(inversedBy: 'meseurments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $User = null;
 
     #[ORM\Column]
+    #[Assert\LessThanOrEqual('today', message: 'Data nie może być w przyszłości.')]
+    #[Assert\GreaterThanOrEqual('-7 days', message: 'Data nie może być starsza niż 7 dni.')]
     private ?\DateTime $date = null;
+
+    public function __construct()
+    {
+        $this->date = new \DateTime();
+    }
 
     public function getId(): ?int
     {
@@ -44,14 +52,14 @@ class Meseurments
         return $this;
     }
 
-    public function getMuscle(): ?Muscles
+    public function getBodyPart(): ?BodyParts
     {
-        return $this->Muscle;
+        return $this->bodyPart;
     }
 
-    public function setMuscle(?Muscles $Muscle): static
+    public function setBodyPart(?BodyParts $bodyPart): static
     {
-        $this->Muscle = $Muscle;
+        $this->bodyPart = $bodyPart;
 
         return $this;
     }

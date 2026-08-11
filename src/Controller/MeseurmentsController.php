@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\BodyParts;
 use App\Entity\Meseurments;
+use App\Entity\User;
 use App\Form\MeseurmentsType;
 use App\Repository\MeseurmentsRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,26 +16,47 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/meseurments')]
 final class MeseurmentsController extends AbstractController
 {
-    #[Route(name: 'app_meseurments_index', methods: ['GET'])]
-    public function index(MeseurmentsRepository $meseurmentsRepository): Response
+    #[Route('/', name: 'app_meseurments_show', methods: ['GET'])]
+    public function show(MeseurmentsRepository $meseurmentsRepository): Response
     {
-        return $this->render('meseurments/index.html.twig', [
-            'meseurments' => $meseurmentsRepository->findAll(),
+        /** @var User $user */
+        $user = $this->getUser();
+        $meseurment = $meseurmentsRepository->findByUserId($user->getId());
+    
+        return $this->render('meseurments/show.html.twig', [
+            'meseurment' => $meseurment,
         ]);
     }
-
+    
     #[Route('/new', name: 'app_meseurments_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $meseurment = new Meseurments();
-        $form = $this->createForm(MeseurmentsType::class, $meseurment);
-        $form->handleRequest($request);
+        if ($request->query->has('id_body_part')) {
+            $meseurment->setBodyPart($entityManager->getReference(BodyParts::class, $request->query->getInt('id_body_part')));
+        }
 
+        $form = $this->createForm(MeseurmentsType::class, $meseurment, [
+            'action' => $this->generateUrl('app_meseurments_new', [
+                'id_body_part' => $request->query->get('id_body_part')
+            ])
+        ]);
+        $form->handleRequest($request);
+        
+        $user = $this->getUser();
         if ($form->isSubmitted() && $form->isValid()) {
+            $meseurment->setUser($user);
             $entityManager->persist($meseurment);
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_meseurments_index', [], Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_meseurments_show', [], Response::HTTP_SEE_OTHER);
+        }
+
+        if ($request->isXmlHttpRequest()) {
+            return $this->render('meseurments/_new_form.html.twig', [
+                'meseurment' => $meseurment,
+                'form' => $form,
+            ]);
         }
 
         return $this->render('meseurments/new.html.twig', [
@@ -42,30 +65,30 @@ final class MeseurmentsController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_meseurments_show', methods: ['GET'])]
-    public function show(int $id, MeseurmentsRepository $meseurmentsRepository): Response
-    {
-        $meseurment = $meseurmentsRepository->findByUserId($id);
-
-        if (!$meseurment) {
-            throw $this->createNotFoundException('No meseurment found for id '.$id);
-        }
-
-        return $this->render('meseurments/show.html.twig', [
-            'meseurment' => $meseurment,
-        ]);
-    }
 
     #[Route('/{id}/edit', name: 'app_meseurments_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Meseurments $meseurment, EntityManagerInterface $entityManager): Response
     {
-        $form = $this->createForm(MeseurmentsType::class, $meseurment);
+        if ($meseurment->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException('Nie masz dostępu do tego pomiaru.');
+        }
+
+        $form = $this->createForm(MeseurmentsType::class, $meseurment, [
+            'action' => $this->generateUrl('app_meseurments_edit', ['id' => $meseurment->getId()])
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_meseurments_index', [], Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_meseurments_show', [], Response::HTTP_SEE_OTHER);
+        }
+
+        if ($request->isXmlHttpRequest()) {
+            return $this->render('meseurments/_edit_form.html.twig', [
+                'meseurment' => $meseurment,
+                'form' => $form,
+            ]);
         }
 
         return $this->render('meseurments/edit.html.twig', [
@@ -77,11 +100,15 @@ final class MeseurmentsController extends AbstractController
     #[Route('/{id}', name: 'app_meseurments_delete', methods: ['POST'])]
     public function delete(Request $request, Meseurments $meseurment, EntityManagerInterface $entityManager): Response
     {
+        if ($meseurment->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException('Nie masz dostępu do tego pomiaru.');
+        }
+
         if ($this->isCsrfTokenValid('delete'.$meseurment->getId(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($meseurment);
             $entityManager->flush();
         }
 
-        return $this->redirectToRoute('app_meseurments_index', [], Response::HTTP_SEE_OTHER);
+        return $this->redirectToRoute('app_meseurments_show', [], Response::HTTP_SEE_OTHER);
     }
 }

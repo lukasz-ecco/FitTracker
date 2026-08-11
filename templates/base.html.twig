@@ -1,83 +1,98 @@
 <!DOCTYPE html>
 <html lang="pl">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        
-        {% block stylesheets %}
-            {# Tutaj zazwyczaj ładuje się plik wygenerowany przez Tailwind #}
-            <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
-        {% endblock %}
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>
+			{% block title %}Welcome!
+			{% endblock %}
+		</title>
+		<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
-    </head>
-    
-    {# bg-gray-100: jasnoszare tło dla całej strony, font-sans: ładny font #}
-    <body class="bg-gray-100 text-gray-800 font-sans antialiased">
-        
-        <div class="flex h-screen overflow-hidden bg-gray-50 font-sans antialiased">
-            
-            <nav class="w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-10">
-                
-                <div class="p-6 text-xl font-bold border-b border-gray-800 tracking-wide">
-                    Moja Aplikacja
-                </div>
-                
-                <div class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-                    
-                    {% set current_route = app.request.attributes.get('_route') %}
+		{% block stylesheets %}
+			{# Tutaj zazwyczaj ładuje się plik wygenerowany przez Tailwind #}
+			<link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+		{% endblock %}
 
-                    <a href="{{ path('app_main_page') }}" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_main_page' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
-                        🏠 Strona Główna
-                    </a>
+		{% block javascripts %}
+			{% block importmap %}
+				{{ importmap('app') }}
+			{% endblock %}
+		{% endblock %}
+	</head>
 
-                    {% set is_profile_active = current_route in ['app_user_info_edit', 'app_measurements_index', 'app_training_goals', 'app_training_plan', 'app_training_history', 'app_account_settings'] %}
-                    <div x-data="{ open: {{ is_profile_active ? 'true' : 'false' }} }">
-                        <button @click="open = !open" class="w-full flex justify-between items-center px-4 py-3 rounded-lg transition-colors {{ is_profile_active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
-                            <span>👤 Twój Profil</span>
-                            <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        
-                        <ul x-show="open" x-transition class="mt-2 space-y-1 pl-6">
-                            <li><a href="{{ path('app_user_info_edit', {'id': app.user.id ?? 1}) }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_user_info_edit' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Edytuj profil</a></li>
-                            <li><a href="{{ path('app_meseurments_show', {'id': app.user.id ?? 1}) }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_measurements' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Pomiary</a></li>
-                            <li><a href="#" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_training_goals' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Cele treningowe</a></li>
-                        </ul>
-                    </div>
+	{# bg-gray-100: jasnoszare tło dla całej strony, font-sans: ładny font #}
+	<body class="bg-gray-100 text-gray-800 font-sans antialiased">
 
-                    <a href="app_exercises" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_exercises' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
-                        🏋️ Ćwiczenia
-                    </a>
+		<div class="flex h-screen overflow-hidden bg-gray-50 font-sans antialiased">
 
-                    {% set is_notif_active = current_route in ['app_all_notifications', 'app_unread_notifications', 'app_alert_settings'] %}
-                    <div x-data="{ open: {{ is_notif_active ? 'true' : 'false' }} }">
-                        <button @click="open = !open" class="w-full flex justify-between items-center px-4 py-3 rounded-lg transition-colors {{ is_notif_active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
-                            <span>🔔 Powiadomienia</span>
-                            <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <ul x-show="open" x-transition class="mt-2 space-y-1 pl-6">
-                            <li><a href="app_all_notifications" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_all_notifications' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Wszystkie</a></li>
-                        </ul>
-                    </div>
+			<nav class="w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-10">
 
-                </div>
-                
-                <div class="p-4 border-t border-gray-800">
-                    <a href="/logout" class="block px-4 py-2 text-center text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors duration-200">
-                        🚪 Wyloguj się
-                    </a>
-                </div>
-            </nav>
+				<div class="p-6 text-xl font-bold border-b border-gray-800 tracking-wide">
+					Moja Aplikacja
+				</div>
 
-            <main class="flex-1 overflow-y-auto p-10">
-                {% block body %}
-                    {% endblock %}
-            </main>
-            
-        </div>
-    </body>
-</html>
+				<div class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+
+					{% set current_route = app.request.attributes.get('_route') %}
+
+					<a href="{{ path('app_main_page') }}" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_main_page' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+						🏠 Strona Główna
+					</a>
+
+					{% set is_profile_active = current_route in ['app_user_info_edit', 'app_measurements_index', 'app_training_goals', 'app_training_plan', 'app_training_history', 'app_account_settings'] %}
+					<div x-data="{ open: {{ is_profile_active ? 'true' : 'false' }} }">
+						<button @click="open = !open" class="w-full flex justify-between items-center px-4 py-3 rounded-lg transition-colors {{ is_profile_active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+							<span>👤 Twój Profil</span>
+							<svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+							</svg>
+						</button>
+
+						<ul x-show="open" x-transition class="mt-2 space-y-1 pl-6">
+							<li>
+								<a href="{{ path('app_user_info_edit') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_user_info_edit' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Edytuj profil</a>
+							</li>
+							<li>
+								<a href="{{ path('app_meseurments_show') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_measurements' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Pomiary</a>
+							</li>
+							<li>
+								<a href="#" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_training_goals' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Cele treningowe</a>
+							</li>
+						</ul>
+					</div>
+
+					<a href="app_exercises" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_exercises' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+						🏋️ Ćwiczenia
+					</a>
+
+					{% set is_notif_active = current_route in ['app_all_notifications', 'app_unread_notifications', 'app_alert_settings'] %}
+					<div x-data="{ open: {{ is_notif_active ? 'true' : 'false' }} }">
+						<button @click="open = !open" class="w-full flex justify-between items-center px-4 py-3 rounded-lg transition-colors {{ is_notif_active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+							<span>🔔 Powiadomienia</span>
+							<svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+							</svg>
+						</button>
+						<ul x-show="open" x-transition class="mt-2 space-y-1 pl-6">
+							<li>
+								<a href="app_all_notifications" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_all_notifications' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Wszystkie</a>
+							</li>
+						</ul>
+					</div>
+
+				</div>
+
+				<div class="p-4 border-t border-gray-800">
+					<a href="/logout" class="block px-4 py-2 text-center text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors duration-200">
+						🚪 Wyloguj się
+					</a>
+				</div>
+			</nav>
+
+			<main class="flex-1 overflow-y-auto p-10"> {% block body %}{% endblock %}
+				</main>
+
+			</div>
+		</body>
+	</html>

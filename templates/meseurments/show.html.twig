@@ -1,39 +1,67 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Meseurments{% endblock %}
+{% block title %}Meseurments
+{% endblock %}
 
 {% block body %}
-    <h1>Meseurments</h1>
-    <table class="table">
-        <tbody>
-        {% for each in meseurment %}
-            <tr>
-                <th>Id</th>
-                <td>{{ each.id }}</td>
-            </tr>
-            <tr>
-                <th>Size</th>
-                <td>{{ each.Size }}</td>
-            </tr>
-            <tr>
-                <th>Muscle</th>
-                <td>{{ each.Muscle ? each.Muscle.name : '' }}</td>
-            </tr>
-            <tr>
-                <th>User</th>
-                <td>{{ each.User ? each.User.name : '' }}</td>
-            </tr>
-            <tr>
-                <th>Date</th>
-                <td>{{ each.date ? each.date|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+	<div data-controller="modal">
+		<div class="max-w-7xl mx-auto py-8 px-4">
 
-    {# <a href="{{ path('app_meseurments_index') }}">back to list</a>
+			<h1 class="text-2xl font-semibold mb-6">Pomiary</h1>
 
-    <a href="{{ path('app_meseurments_edit', {'id': meseurment.id}) }}">edit</a> #}
+			<div class="table-wrapper">
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Id</th>
+							<th>Rozmiar</th>
+							<th>Cześć ciała</th>
+							<th>Data</th>
+							<th class="text-center">Akcje</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for each in meseurment %}
+							<tr>
+								<td class="highlight">{{ each.id }}</td>
+								<td>{{ each.Size }}</td>
+								<td>{{ each.bodyPart ? each.bodyPart.name : '-' }}</td>
+								<td>{{ each.date ? each.date|date('Y-m-d H:i') : '-' }}</td>
+								<td class="flex justify-between space-x-3">
+									<button type="button" data-action="click->modal#open" data-url="{{ path('app_meseurments_edit', {'id': each.id}) }}" data-title="Edytuj pomiar" class="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+										Edytuj
+									</button>
+									<button type="button" data-action="click->modal#open" data-url="{{ path('app_meseurments_new', {'id_body_part': each.bodyPart.id, 'nazwa': each.bodyPart.name}) }}" data-title="Nowy pomiar" class="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+										Nowy pomiar
+									</button>
+								</td>
+							</tr>
+						{% else %}
+							<tr>
+								<td colspan="6" class="text-center text-gray-500 py-8">
+									Brak pomiarów do wyświetlenia.
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
 
-    {# {{ include('meseurments/_delete_form.html.twig') }} #}
+		<div data-modal-target="dialog" data-action="click->modal#closeOnBackground" class="fixed inset-0 z-50 hidden overflow-y-auto backdrop-blur-sm bg-white/10 flex items-center justify-center transition-opacity duration-300">
+
+			<div
+				class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+
+				<!-- 4. Przycisk zamykania -->
+				<button data-action="click->modal#close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 text-2xl font-semibold leading-none">&times;</button>
+
+				<h2 class="text-xl font-semibold mb-4 text-gray-900" data-modal-target="title"></h2>
+
+				<!-- 5. Cel dla ładowanej treści formularza -->
+				<div data-modal-target="content" class="mt-4"></div>
+
+			</div>
+		</div>
+	</div>
 {% endblock %}
