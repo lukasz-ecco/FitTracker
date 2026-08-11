@@ -13,10 +13,10 @@ use Symfony\Component\HttpFoundation\Request;
 #[Route('/exercises')]
 final class ExercisesController extends AbstractController
 {
-    #[Route(name: 'app_exercises_index')]
+    #[Route(name: 'app_exercises')]
     public function index(EntityManagerInterface $entityManager): Response
     {
-        $exercises = $entityManager->getRepository(Exercises::class)->findAll();
+        $exercises = $entityManager->getRepository(Exercises::class)->findAllWithMuscles();
 
         return $this->render('exercises/index.html.twig', [
             'controller_name' => 'ExercisesController',
@@ -35,7 +35,7 @@ final class ExercisesController extends AbstractController
             $entityManager->persist($exercise);
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_exercises_index');
+            return $this->redirectToRoute('app_exercises');
         }
 
         return $this->render('exercises/add.html.twig', [
@@ -52,7 +52,7 @@ final class ExercisesController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_exercises_index');
+            return $this->redirectToRoute('app_exercises');
         }
 
         return $this->render('exercises/edit.html.twig', [

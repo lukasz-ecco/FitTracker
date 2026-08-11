@@ -19,6 +19,7 @@ class Muscles
     private ?string $name = null;
 
     #[ORM\ManyToOne(inversedBy: 'muscles')]
+    #[ORM\JoinColumn(nullable: false)]
     private ?BodyParts $bodyPart = null;
 
     /**
@@ -82,7 +83,6 @@ class Muscles
     public function removeExerciseMuscle(ExerciseMuscle $exerciseMuscle): static
     {
         if ($this->exerciseMuscles->removeElement($exerciseMuscle)) {
-            // set the owning side to null (unless already changed)
             if ($exerciseMuscle->getMuscle() === $this) {
                 $exerciseMuscle->setMuscle(null);
             }

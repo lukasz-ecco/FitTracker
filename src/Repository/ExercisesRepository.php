@@ -16,28 +16,21 @@ class ExercisesRepository extends ServiceEntityRepository
         parent::__construct($registry, Exercises::class);
     }
 
-    //    /**
-    //     * @return Exercises[] Returns an array of Exercises objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('e')
-    //            ->andWhere('e.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('e.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Exercises
-    //    {
-    //        return $this->createQueryBuilder('e')
-    //            ->andWhere('e.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Finds all exercises with their associated muscles (avoids N+1 problem).
+     *
+     * @return Exercises[]
+     */
+    public function findAllWithMuscles(): array
+    {
+        return $this->createQueryBuilder('e')
+            ->leftJoin('e.exerciseMuscles', 'em')
+            ->addSelect('em')
+            ->leftJoin('em.Muscle', 'm')
+            ->addSelect('m')
+            ->orderBy('e.name', 'ASC')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }
