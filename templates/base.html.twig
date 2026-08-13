@@ -66,6 +66,16 @@
 						🏋️ Ćwiczenia
 					</a>
 
+					{% if is_granted('ROLE_TRAINER') %}
+						<a href="{{ path('app_trainer_trainees') }}" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_trainer_trainees' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+							👥 Moi podopieczni
+						</a>
+					{% elseif is_granted('ROLE_TRAINEE') %}
+						<a href="{{ path('app_trainee_trainers') }}" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_trainee_trainers' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+							💪 Moi trenerzy
+						</a>
+					{% endif %}
+
 					{% set is_notif_active = current_route in ['app_all_notifications', 'app_unread_notifications', 'app_alert_settings'] %}
 					<div x-data="{ open: {{ is_notif_active ? 'true' : 'false' }} }">
 						<button @click="open = !open" class="w-full flex justify-between items-center px-4 py-3 rounded-lg transition-colors {{ is_notif_active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">

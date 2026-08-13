@@ -36,7 +36,7 @@ class FitTrackerCustomAuthenticator extends AbstractLoginFormAuthenticator
             new UserBadge($email),
             new PasswordCredentials($request->getPayload()->getString('password')),
             [
-                new CsrfTokenBadge('authenticate', $request->getPayload()->getString('_csrf_token')),
+                new CsrfTokenBadge('login', $request->getPayload()->getString('_csrf_token')),
                 new RememberMeBadge(),
             ]
         );

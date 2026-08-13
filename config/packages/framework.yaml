@@ -5,6 +5,9 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    csrf_protection:
+        stateless_token_ids: []
+
     #esi: true
     #fragments: true
 

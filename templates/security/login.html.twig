@@ -35,7 +35,7 @@
                     <input type="email" value="{{ last_username }}" name="email" id="username" class="form-input-styled" autocomplete="email" placeholder="email@przyklad.pl" required autofocus>
                 </div>
 
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('login') }}">
 
                 {# Pole: Hasło #}
                 <div>

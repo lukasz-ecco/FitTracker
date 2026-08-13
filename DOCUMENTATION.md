@@ -35,6 +35,11 @@ Aplikacja opiera się na relacyjnym modelu danych. Poniżej znajduje się opis n
 - **TrainingGoal:** Reprezentuje aktywny cel treningowy wyznaczony przez użytkownika. Powiązany z `GoalType` (typ celu), poziomem zaawansowania (1-3) oraz ewentualnymi notatkami.
 - **ExerciseSupportedGoal:** Powiązanie określające, do których `GoalType` dane ćwiczenie pasuje najlepiej.
 
+### Relacja Trener - Podopieczny
+- **TrainerTraineeConnection:** Encja łącząca konta trenera i podopiecznego (relacja Many-to-Many między użytkownikami z wykorzystaniem tabeli pośredniej).
+  - *Atrybuty:* Obejmuje status zaproszenia (`PENDING`, `ACCEPTED`, `REJECTED`), datę utworzenia powiązania oraz znacznik `isMain`, określający, czy dany trener jest trenerem głównym podopiecznego.
+  - *Role:* Przypisywanie ról odbywa się podczas rejestracji, gdzie użytkownik wybiera, czy zakłada konto jako Trener (`ROLE_TRAINER`), czy Podopieczny (`ROLE_TRAINEE`).
+
 ## 3. Główne Funkcjonalności i Reguły Biznesowe
 
 ### Zarządzanie Celami Treningowymi
@@ -48,6 +53,11 @@ Spersonalizowana logika dobierająca ćwiczenia jest scentralizowana w serwisie 
 2. Następnie, na podstawie każdego z celów wyszukiwane są powiązane ćwiczenia, które aktywnie go wspierają (tabela `ExerciseSupportedGoal`).
 3. **Filtrowanie zaawansowania:** Ćwiczenia są rygorystycznie ograniczane maksymalnym poziomem trudności. Trudność jest wyliczana jako mnożnik ustalonego poziomu zaawansowania (Poziom 1 → max trudność 3, Poziom 2 → max 6, Poziom 3 → max 9).
 4. System automatycznie agreguje wyniki ze wszystkich list, eliminuje powtarzające się wartości i sortuje wyniki alfabetycznie, aby zaprezentować gotowy zestaw ćwiczeń na stronie `/training-goal/suggestions`.
+
+### Współpraca Trener - Podopieczny
+Zaimplementowano moduł łączący trenerów personalnych z podopiecznymi:
+- **Dla Trenera (`TrainerController` oraz `TrainerInvitationService`):** Możliwość przeglądania podopiecznych oraz zapraszania nowych poprzez adres e-mail w systemie. Zaproszenia na starcie mają status oczekujący. Logika biznesowa wysyłki i walidacji zaproszeń została odseparowana do dedykowanego serwisu.
+- **Dla Podopiecznego (`TraineeController`):** Możliwość przeglądania aktywnych współpracy oraz akceptacji bądź odrzucania otrzymanych zaproszeń e-mailowych. Podopieczny może zdefiniować jednego ze swoich trenerów jako Głównego. System w pełni wspiera wiele połączeń na obu końcach relacji.
 
 ## 4. Architektura Frontendowa i Interfejs Użytkownika
 

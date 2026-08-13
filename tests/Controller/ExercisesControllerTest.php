@@ -13,16 +13,14 @@ class ExercisesControllerTest extends WebTestCase
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
         
-        // Clean up previous test users if needed or just use a unique email
         $user = new User();
         $user->setEmail(uniqid('test_', true) . '@example.com');
-        $user->setPassword('testpassword'); // Password doesn't need to be hashed for just logging in the test client
+        $user->setPassword('testpassword');
         $user->setRoles(['ROLE_USER']);
         
         $entityManager->persist($user);
         $entityManager->flush();
 
-        // Simulate login
         $client->loginUser($user);
     }
 
@@ -46,7 +44,6 @@ class ExercisesControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h1', 'Dodaj nowe ćwiczenie');
-        // Ensure the form is present
         $this->assertSelectorExists('form[name="exercise"]');
     }
 }

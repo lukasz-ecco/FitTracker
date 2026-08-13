@@ -78,10 +78,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: TrainingGoal::class, mappedBy: 'user', cascade: ['persist'], orphanRemoval: true)]
     private Collection $trainingGoals;
 
+    /**
+     * @var Collection<int, TrainerTraineeConnection>
+     */
+    #[ORM\OneToMany(targetEntity: TrainerTraineeConnection::class, mappedBy: 'trainer', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $trainerConnections;
+
+    /**
+     * @var Collection<int, TrainerTraineeConnection>
+     */
+    #[ORM\OneToMany(targetEntity: TrainerTraineeConnection::class, mappedBy: 'trainee', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $traineeConnections;
+
     public function __construct()
     {
         $this->meseurments = new ArrayCollection();
         $this->trainingGoals = new ArrayCollection();
+        $this->trainerConnections = new ArrayCollection();
+        $this->traineeConnections = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -320,4 +334,65 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    /**
+     * @return Collection<int, TrainerTraineeConnection>
+     */
+    public function getTrainerConnections(): Collection
+    {
+        return $this->trainerConnections;
+    }
+
+    public function addTrainerConnection(TrainerTraineeConnection $trainerConnection): static
+    {
+        if (!$this->trainerConnections->contains($trainerConnection)) {
+            $this->trainerConnections->add($trainerConnection);
+            $trainerConnection->setTrainer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTrainerConnection(TrainerTraineeConnection $trainerConnection): static
+    {
+        if ($this->trainerConnections->removeElement($trainerConnection)) {
+            // set the owning side to null (unless already changed)
+            if ($trainerConnection->getTrainer() === $this) {
+                $trainerConnection->setTrainer(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, TrainerTraineeConnection>
+     */
+    public function getTraineeConnections(): Collection
+    {
+        return $this->traineeConnections;
+    }
+
+    public function addTraineeConnection(TrainerTraineeConnection $traineeConnection): static
+    {
+        if (!$this->traineeConnections->contains($traineeConnection)) {
+            $this->traineeConnections->add($traineeConnection);
+            $traineeConnection->setTrainee($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTraineeConnection(TrainerTraineeConnection $traineeConnection): static
+    {
+        if ($this->traineeConnections->removeElement($traineeConnection)) {
+            // set the owning side to null (unless already changed)
+            if ($traineeConnection->getTrainee() === $this) {
+                $traineeConnection->setTrainee(null);
+            }
+        }
+
+        return $this;
+    }
 }
+

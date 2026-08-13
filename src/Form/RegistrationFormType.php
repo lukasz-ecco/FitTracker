@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -18,6 +19,22 @@ class RegistrationFormType extends AbstractType
     {
         $builder
             ->add('email')
+            ->add('accountType', ChoiceType::class, [
+                'mapped' => false,
+                'label' => 'Typ konta',
+                'choices' => [
+                    'Trener' => 'ROLE_TRAINER',
+                    'Podopieczny' => 'ROLE_TRAINEE',
+                ],
+                'expanded' => true,
+                'multiple' => false,
+                'data' => 'ROLE_TRAINEE', // Domyślna wartość
+                'constraints' => [
+                    new NotBlank([
+                        'message' => 'Proszę wybrać typ konta',
+                    ]),
+                ],
+            ])
             ->add('agreeTerms', CheckboxType::class, [
                 'mapped' => false,
                 'constraints' => [
