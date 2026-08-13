@@ -72,14 +72,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Meseurments::class, mappedBy: 'User')]
     private Collection $meseurments;
 
+    /**
+     * @var Collection<int, TrainingGoal>
+     */
+    #[ORM\OneToMany(targetEntity: TrainingGoal::class, mappedBy: 'user', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $trainingGoals;
+
     public function __construct()
     {
         $this->meseurments = new ArrayCollection();
+        $this->trainingGoals = new ArrayCollection();
     }
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    /**
+     * @return Collection<int, TrainingGoal>
+     */
+    public function getTrainingGoals(): Collection
+    {
+        return $this->trainingGoals;
+    }
+
+    public function addTrainingGoal(TrainingGoal $trainingGoal): static
+    {
+        if (!$this->trainingGoals->contains($trainingGoal)) {
+            $this->trainingGoals->add($trainingGoal);
+            $trainingGoal->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTrainingGoal(TrainingGoal $trainingGoal): static
+    {
+        if ($this->trainingGoals->removeElement($trainingGoal)) {
+            // set the owning side to null (unless already changed)
+            if ($trainingGoal->getUser() === $this) {
+                $trainingGoal->setUser(null);
+            }
+        }
+
+        return $this;
     }
 
     public function getEmail(): ?string

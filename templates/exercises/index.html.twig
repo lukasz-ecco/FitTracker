@@ -24,6 +24,7 @@
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Typ</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Poziom trudności</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Zaangażowane mięśnie</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Wspierane cele</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Akcje</th>
                 </tr>
             </thead>
@@ -67,6 +68,17 @@
                                 </span>
                             {% else %}
                                 <span class="text-xs text-gray-400 italic">Brak przypisanych mięśni</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-1">
+                            {% for supportedGoal in exercise.supportedGoals %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider border bg-blue-50 text-blue-700 border-blue-200">
+                                    {{ supportedGoal.goalType.label }}
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-gray-400 italic">Brak celów</span>
                             {% endfor %}
                         </div>
                     </td>

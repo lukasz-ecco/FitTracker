@@ -6,6 +6,7 @@ use App\Repository\ExercisesRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use App\Enum\TrainingGoalType;
 
 #[ORM\Entity(repositoryClass: ExercisesRepository::class)]
 class Exercises
@@ -30,9 +31,16 @@ class Exercises
     #[ORM\OneToMany(targetEntity: ExerciseMuscle::class, mappedBy: 'Exercise', cascade: ['persist'], orphanRemoval: true)]
     private Collection $exerciseMuscles;
 
+    /**
+     * @var Collection<int, ExerciseSupportedGoal>
+     */
+    #[ORM\OneToMany(targetEntity: ExerciseSupportedGoal::class, mappedBy: 'exercise', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $supportedGoals;
+
     public function __construct()
     {
         $this->exerciseMuscles = new ArrayCollection();
+        $this->supportedGoals = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -100,6 +108,36 @@ class Exercises
             // set the owning side to null (unless already changed)
             if ($exerciseMuscle->getExercise() === $this) {
                 $exerciseMuscle->setExercise(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ExerciseSupportedGoal>
+     */
+    public function getSupportedGoals(): Collection
+    {
+        return $this->supportedGoals;
+    }
+
+    public function addSupportedGoal(ExerciseSupportedGoal $supportedGoal): static
+    {
+        if (!$this->supportedGoals->contains($supportedGoal)) {
+            $this->supportedGoals->add($supportedGoal);
+            $supportedGoal->setExercise($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSupportedGoal(ExerciseSupportedGoal $supportedGoal): static
+    {
+        if ($this->supportedGoals->removeElement($supportedGoal)) {
+            // set the owning side to null (unless already changed)
+            if ($supportedGoal->getExercise() === $this) {
+                $supportedGoal->setExercise(null);
             }
         }
 

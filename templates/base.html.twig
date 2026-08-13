@@ -40,7 +40,7 @@
 						🏠 Strona Główna
 					</a>
 
-					{% set is_profile_active = current_route in ['app_user_info_edit', 'app_measurements_index', 'app_training_goals', 'app_training_plan', 'app_training_history', 'app_account_settings'] %}
+					{% set is_profile_active = current_route in ['app_user_info_edit', 'app_measurements_index', 'app_training_goal_set', 'app_training_goal_suggestions', 'app_training_plan', 'app_training_history', 'app_account_settings'] %}
 					<div x-data="{ open: {{ is_profile_active ? 'true' : 'false' }} }">
 						<button @click="open = !open" class="w-full flex justify-between items-center px-4 py-3 rounded-lg transition-colors {{ is_profile_active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
 							<span>👤 Twój Profil</span>
@@ -57,7 +57,7 @@
 								<a href="{{ path('app_meseurments_show') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_measurements' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Pomiary</a>
 							</li>
 							<li>
-								<a href="#" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_training_goals' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Cele treningowe</a>
+								<a href="{{ path('app_training_goal_suggestions') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route in ['app_training_goal_set', 'app_training_goal_suggestions'] ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Cele treningowe</a>
 							</li>
 						</ul>
 					</div>
