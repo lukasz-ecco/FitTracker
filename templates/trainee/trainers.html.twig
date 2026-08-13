@@ -26,7 +26,19 @@
                 {% for connection in connections %}
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4">
-                        <div class="text-sm font-medium text-gray-900">{{ connection.trainer.email }}</div>
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <img class="h-10 w-10 rounded-full object-cover border border-gray-100 shadow-sm" src="{{ connection.trainer.profilePicture ? asset('uploads/avatars/' ~ connection.trainer.profilePicture) : 'https://ui-avatars.com/api/?name=' ~ connection.trainer.email|url_encode ~ '&background=random' }}" alt="Avatar">
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ connection.trainer.name ? connection.trainer.name ~ ' ' ~ connection.trainer.surrname : connection.trainer.email }}
+                                </div>
+                                {% if connection.trainer.name %}
+                                    <div class="text-xs text-gray-500">{{ connection.trainer.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </td>
                     <td class="px-6 py-4">
                         {% if connection.status == 'PENDING' %}
@@ -52,14 +64,14 @@
                         {% elseif connection.status == 'ACCEPTED' %}
                             <form action="{{ path('app_trainee_connection_status', {'id': connection.id}) }}" method="POST">
                                 <input type="hidden" name="status" value="REJECTED">
-                                <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-800">Zakończ współpracę</button>
+                                <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 px-3 py-1.5 rounded-md hover:bg-red-100 transition-colors border border-red-100">Zakończ współpracę</button>
                             </form>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4">
                         {% if connection.status == 'ACCEPTED' %}
                             {% if connection.isMain %}
-                                <span class="inline-flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                                <span class="inline-flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                     </svg>
@@ -67,7 +79,7 @@
                                 </span>
                             {% else %}
                                 <form action="{{ path('app_trainee_connection_main', {'id': connection.id}) }}" method="POST">
-                                    <button type="submit" class="text-xs font-medium text-gray-500 hover:text-blue-600 hover:underline">Ustaw jako głównego</button>
+                                    <button type="submit" class="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-md hover:bg-blue-100 transition-colors border border-blue-100">Ustaw jako głównego</button>
                                 </form>
                             {% endif %}
                         {% else %}

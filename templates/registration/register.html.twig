@@ -1,78 +1,104 @@
-{% extends 'base_minimal.html.twig' %}
-
-{% block title %}Zarejestruj się{% endblock %}
-
-{% block body %}
-<div class="w-100" style="max-width: 420px; padding: 15px; margin-top: -10vh;">
+<!DOCTYPE html>
+<html lang="pl">
+    <head>
+        <meta charset="UTF-8">
+        <title>Zarejestruj się | Moja Aplikacja</title>
+        {% block stylesheets %}
+            {# Podpięcie skompilowanego pliku Tailwinda #}
+            <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+        {% endblock %}
+    </head>
     
-    <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-body p-5">
+    {# Kontener główny: pełny ekran, jasnoszare tło, wyśrodkowanie #}
+    <body class="min-h-screen bg-gray-50 flex flex-col mt-5 items-center justify-center p-6 font-sans antialiased">
+        
+        {# Karta logowania: szerokość maks-md, białe tło, duże zaokrąglenia, cień #}
+        <div class="w-full max-w-md bg-white -mt-50 p-10 rounded-3xl shadow-xl border border-gray-100">
             
-            <div class="text-center mb-4">
-                <h2 class="fw-bold">Dołącz do nas! 🚀</h2>
-                <p class="text-muted">Załóż darmowe konto</p>
-            </div>
+            {# Nagłówki ( Title / Subtitle ) #}
+            <h1 class="text-3xl font-extrabold text-center text-gray-900 tracking-tight">Dołącz do nas! 🚀</h1>
+            <p class="text-center text-gray-600 mt-3 mb-8">Załóż darmowe konto</p>
 
             {# --- KOMUNIKATY O BŁĘDACH (np. przy weryfikacji email) --- #}
             {% for flash_error in app.flashes('verify_email_error') %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
                     {{ flash_error }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Zamknij"></button>
                 </div>
             {% endfor %}
 
             {# --- GŁÓWNE BŁĘDY FORMULARZA --- #}
             {% if not registrationForm.vars.valid %}
-                <div class="alert alert-danger">
+                <div class="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
                     Proszę poprawić błędy w formularzu poniżej.
                 </div>
             {% endif %}
 
-            {# Rozpoczęcie formularza z wyłączeniem domyślnej walidacji przeglądarki (żeby ładnie pokazywać polskie błędy z Symfony) #}
-            {{ form_start(registrationForm, {'attr': {'novalidate': 'novalidate'}}) }}
+            {# Rozpoczęcie formularza z wyłączeniem domyślnej walidacji przeglądarki #}
+            {{ form_start(registrationForm, {'attr': {'novalidate': 'novalidate', 'class': 'space-y-6'}}) }}
                 
-                {# Pole Email z "pływającą" etykietą #}
-                <div class="form-floating mb-3">
-                    {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control', 'placeholder': 'name@example.com'}}) }}
-                    {{ form_label(registrationForm.email, 'Adres e-mail') }}
-                    <div class="text-danger small mt-1">
+                {# Pole Email #}
+                <div>
+                    {{ form_label(registrationForm.email) }}
+                    {{ form_widget(registrationForm.email, {'attr': {'placeholder': 'name@example.com'}}) }}
+                    <div class="text-sm font-medium text-red-600 mt-1.5">
                         {{ form_errors(registrationForm.email) }}
                     </div>
                 </div>
 
                 {# Pole Hasło #}
-                <div class="form-floating mb-4">
-                    {{ form_widget(registrationForm.plainPassword, {'attr': {'class': 'form-control', 'placeholder': 'Hasło'}}) }}
-                    {{ form_label(registrationForm.plainPassword, 'Hasło') }}
-                    <div class="text-danger small mt-1">
+                <div>
+                    {{ form_label(registrationForm.plainPassword) }}
+                    {{ form_widget(registrationForm.plainPassword, {'attr': {'placeholder': '••••••••'}}) }}
+                    <div class="text-sm font-medium text-red-600 mt-1.5">
                         {{ form_errors(registrationForm.plainPassword) }}
                     </div>
                 </div>
 
-                {# Checkbox - Akceptacja regulaminu #}
-                <div class="form-check mb-4 d-flex justify-content-start align-items-center gap-2">
-                    {{ form_widget(registrationForm.agreeTerms, {'attr': {'class': 'form-check-input mt-0'}}) }}
-                    {{ form_label(registrationForm.agreeTerms, 'Akceptuję regulamin serwisu', {'label_attr': {'class': 'form-check-label text-muted'}}) }}
-                </div>
-                {# Błąd dla checkboxa (wyświetli się pod nim, jeśli użytkownik go nie zaznaczy) #}
-                <div class="text-danger small mb-3" style="margin-top: -15px;">
-                    {{ form_errors(registrationForm.agreeTerms) }}
+                {# Typ Konta #}
+                <div>
+                    {{ form_label(registrationForm.accountType) }}
+                    <div class="flex items-center space-x-6 mt-2">
+                        {% for child in registrationForm.accountType %}
+                            <div class="flex items-center">
+                                {{ form_widget(child, {'attr': {'class': 'h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer'}}) }}
+                                {{ form_label(child, null, {'label_attr': {'class': 'ml-2 block text-sm text-gray-700 cursor-pointer mb-0'}}) }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-sm font-medium text-red-600 mt-1.5">
+                        {{ form_errors(registrationForm.accountType) }}
+                    </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 py-2 fs-5">
-                    Zarejestruj się
-                </button>
+                {# Checkbox - Akceptacja regulaminu #}
+                <div>
+                    <div class="flex items-center mt-4">
+                        {{ form_widget(registrationForm.agreeTerms, {'attr': {'class': 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer'}}) }}
+                        {{ form_label(registrationForm.agreeTerms, 'Akceptuję regulamin serwisu', {'label_attr': {'class': 'ml-2.5 block text-sm text-gray-700 cursor-pointer mb-0'}}) }}
+                    </div>
+                    <div class="text-sm font-medium text-red-600 mt-1.5">
+                        {{ form_errors(registrationForm.agreeTerms) }}
+                    </div>
+                </div>
+
+                {# Przycisk logowania (Użycie klasy .btn-primary) #}
+                <div class="pt-4">
+                    <button type="submit" class="btn-primary w-full">
+                        Zarejestruj się
+                    </button>
+                </div>
+                
+                {# Link: Zaloguj się (na samym dole) #}
+                <div class="pt-6 border-t border-gray-100 mt-8 text-center text-sm text-gray-600">
+                    Masz już konto? 
+                    <a href="{{ path('app_login') }}" class="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                        Zaloguj się
+                    </a>
+                </div>
                 
             {{ form_end(registrationForm) }}
-
+            
         </div>
         
-        {# Dolna sekcja (stopka) z linkiem powrotnym #}
-        <div class="card-footer bg-light text-center py-3 border-0 rounded-bottom-4">
-            <span class="text-muted">Masz już konto?</span> 
-            <a href="{{ path('app_login') }}" class="text-decoration-none fw-bold">Zaloguj się</a>
-        </div>
-    </div>
-    
-</div>
-{% endblock %}
+    </body>
+</html>

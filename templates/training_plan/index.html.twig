@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Przegląd Treningów{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Twoje Treningi</h1>
+        {# Możemy tu w przyszłości dodać przycisk "Zaplanuj nowy trening" #}
+    </div>
+    
+    {% if workouts is empty %}
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900">Brak treningów</h3>
+            <p class="mt-1 text-gray-500">Nie masz jeszcze żadnych zaplanowanych ani wykonanych treningów.</p>
+        </div>
+    {% else %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for workout in workouts %}
+                <a href="{{ path('app_training_plan_show', {id: workout.id}) }}" class="block group">
+                    <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100 h-full flex flex-col overflow-hidden">
+                        
+                        {# Górny pasek statusu #}
+                        <div class="h-2 w-full 
+                            {% if workout.status == 'COMPLETED' %}bg-green-500
+                            {% elseif workout.status == 'PLANNED' %}bg-blue-500
+                            {% else %}bg-gray-400{% endif %}">
+                        </div>
+
+                        <div class="p-6 flex-1 flex flex-col">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{{ workout.name }}</h3>
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full 
+                                    {% if workout.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                    {% elseif workout.status == 'PLANNED' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ workout.status }}
+                                </span>
+                            </div>
+                            
+                            <p class="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">
+                                {{ workout.description ?: 'Brak opisu dla tego treningu.' }}
+                            </p>
+                            
+                            <div class="flex items-center text-sm text-gray-500 mt-auto pt-4 border-t border-gray-50">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                {{ workout.date ? workout.date|date('Y-m-d H:i') : 'Data nieokreślona' }}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -35,7 +35,7 @@ class TraineeController extends AbstractController
         /** @var User $trainee */
         $trainee = $this->getUser();
         
-        if ($connection->getTrainee() !== $trainee) {
+        if ($connection->getTrainee() !== $trainee && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Brak dostępu.');
         }
 
@@ -55,7 +55,7 @@ class TraineeController extends AbstractController
         /** @var User $trainee */
         $trainee = $this->getUser();
         
-        if ($connection->getTrainee() !== $trainee || $connection->getStatus() !== 'ACCEPTED') {
+        if (($connection->getTrainee() !== $trainee && !$this->isGranted('ROLE_ADMIN')) || $connection->getStatus() !== 'ACCEPTED') {
             throw $this->createAccessDeniedException('Brak dostępu lub zaproszenie niezaakceptowane.');
         }
 

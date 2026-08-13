@@ -69,7 +69,7 @@ final class MeseurmentsController extends AbstractController
     #[Route('/{id}/edit', name: 'app_meseurments_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Meseurments $meseurment, EntityManagerInterface $entityManager): Response
     {
-        if ($meseurment->getUser() !== $this->getUser()) {
+        if ($meseurment->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Nie masz dostępu do tego pomiaru.');
         }
 
@@ -100,7 +100,7 @@ final class MeseurmentsController extends AbstractController
     #[Route('/{id}', name: 'app_meseurments_delete', methods: ['POST'])]
     public function delete(Request $request, Meseurments $meseurment, EntityManagerInterface $entityManager): Response
     {
-        if ($meseurment->getUser() !== $this->getUser()) {
+        if ($meseurment->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Nie masz dostępu do tego pomiaru.');
         }
 

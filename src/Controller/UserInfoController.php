@@ -36,6 +36,7 @@ final class UserInfoController extends AbstractController
             }
 
             $entityManager->flush();
+            $this->addFlash('success', 'Twój profil został zaktualizowany.');
         }
 
         return $this->render('user_info/edit.html.twig', [

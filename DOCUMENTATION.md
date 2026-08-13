@@ -40,6 +40,19 @@ Aplikacja opiera się na relacyjnym modelu danych. Poniżej znajduje się opis n
   - *Atrybuty:* Obejmuje status zaproszenia (`PENDING`, `ACCEPTED`, `REJECTED`), datę utworzenia powiązania oraz znacznik `isMain`, określający, czy dany trener jest trenerem głównym podopiecznego.
   - *Role:* Przypisywanie ról odbywa się podczas rejestracji, gdzie użytkownik wybiera, czy zakłada konto jako Trener (`ROLE_TRAINER`), czy Podopieczny (`ROLE_TRAINEE`).
 
+### System Zapisywania Treningów
+- **Workout:** Reprezentuje pojedynczą jednostkę treningową (plan lub odbytą sesję). Zawiera nazwę, status (`DRAFT`, `PLANNED`, `COMPLETED`), właściciela (`user`) oraz opcjonalnie trenera (`trainer`), który ten plan ułożył.
+- **WorkoutExercise:** Reprezentuje określone ćwiczenie przypisane do konkretnego treningu (łączy `Workout` z `Exercises`). Przechowuje unikalne notatki (np. wskazówki dotyczące techniki) oraz kolejność wykonywania w planie.
+- **WorkoutExerciseSet:** Reprezentuje pojedynczą serię w danym ćwiczeniu. 
+  - *Atrybuty:* Numer serii, ilość powtórzeń, założony ciężar oraz tempo (np. "3-1-X-1").
+  - *Mechanika Drop Set:* Możliwość określenia serii jako "Drop Set" (`isDropSet`) wraz ze wskazaniem serii nadrzędnej (`parentSet`), co pozwala na kaskadowe przypisywanie redukcji ciężaru.
+
+### Przebieg Treningu (Interaktywny interfejs)
+Sekcja `/training-plan` umożliwia przegląd i realizację treningów.
+- **Lista Treningów (`index`):** Wyświetla kafelki ze wszystkimi treningami użytkownika (`DRAFT`, `PLANNED`, `COMPLETED`).
+- **Przegląd i Aktualizacja Na Bieżąco (`show`):** Po wejściu w trening otwiera się widok jego realizacji. Użytkownik widzi kolejne ćwiczenia i serie.
+  - Wykorzystanie **Stimulus.js** (`workout_controller.js`) umożliwia modyfikowanie powtórzeń, ciężaru i statusu odhaczenia (`isCompleted`) "w locie" (Ajax/Fetch API). Zmiany zapisywane są bezpośrednio w bazie bez konieczności przeładowywania strony. Wprowadzono wskaźniki stanu i potwierdzenia zapisu (zielony ptaszek).
+
 ## 3. Główne Funkcjonalności i Reguły Biznesowe
 
 ### Zarządzanie Celami Treningowymi

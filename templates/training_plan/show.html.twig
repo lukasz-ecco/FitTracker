@@ -1,0 +1,122 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Przebieg Treningu: {{ workout.name }}{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm p-8 mb-8 border border-gray-100">
+        <div class="flex justify-between items-start mb-4">
+            <h1 class="text-3xl font-bold text-gray-800">{{ workout.name }}</h1>
+            <span class="px-3 py-1 text-sm font-semibold rounded-full 
+                {% if workout.status == 'COMPLETED' %}bg-green-100 text-green-800
+                {% elseif workout.status == 'PLANNED' %}bg-blue-100 text-blue-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ workout.status }}
+            </span>
+        </div>
+        
+        <p class="text-gray-600 mb-4">{{ workout.description }}</p>
+        
+        <div class="flex items-center text-sm text-gray-500">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            {{ workout.date ? workout.date|date('Y-m-d H:i') : 'Brak przypisanej daty' }}
+        </div>
+    </div>
+
+    {% if workout.workoutExercises is empty %}
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
+            <p class="text-gray-500">Ten trening nie ma jeszcze przypisanych żadnych ćwiczeń.</p>
+        </div>
+    {% else %}
+        <div class="space-y-8">
+            {% for workoutExercise in workout.workoutExercises|sort((a, b) => a.orderIndex <=> b.orderIndex) %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    
+                    {# Nagłówek ćwiczenia #}
+                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">
+                                {{ workoutExercise.orderIndex }}. {{ workoutExercise.exercise.name }}
+                            </h3>
+                            {% if workoutExercise.notes %}
+                                <p class="text-sm text-gray-500 mt-1 italic">{{ workoutExercise.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# Tabela serii #}
+                    <div class="p-6">
+                        {% if workoutExercise.workoutExerciseSets is empty %}
+                            <p class="text-sm text-gray-400">Brak zaplanowanych serii.</p>
+                        {% else %}
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                            <th class="pb-3 px-4">Seria</th>
+                                            <th class="pb-3 px-4">Powt.</th>
+                                            <th class="pb-3 px-4">Ciężar (kg)</th>
+                                            <th class="pb-3 px-4 text-center">Tempo</th>
+                                            <th class="pb-3 px-4 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        {% for set in workoutExercise.workoutExerciseSets|sort((a, b) => a.setNumber <=> b.setNumber) %}
+                                            <tr data-controller="workout" 
+                                                data-workout-update-url-value="{{ path('app_training_plan_set_update', {id: set.id}) }}"
+                                                data-workout-target="row"
+                                                class="transition-colors duration-200 {{ set.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200' }}">
+                                                
+                                                <td class="py-3 px-4">
+                                                    <span class="font-medium text-gray-700">
+                                                        {{ set.setNumber }}
+                                                        {% if set.isDropSet %}<span class="ml-1 text-xs text-red-500 font-bold">(Drop)</span>{% endif %}
+                                                    </span>
+                                                </td>
+                                                
+                                                <td class="py-3 px-4">
+                                                    <input type="number" 
+                                                           data-workout-target="reps" 
+                                                           data-action="change->workout#updateSet blur->workout#updateSet"
+                                                           value="{{ set.reps }}" 
+                                                           class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-center">
+                                                </td>
+                                                
+                                                <td class="py-3 px-4">
+                                                    <input type="number" step="0.5"
+                                                           data-workout-target="weight" 
+                                                           data-action="change->workout#updateSet blur->workout#updateSet"
+                                                           value="{{ set.weight }}" 
+                                                           class="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-center">
+                                                </td>
+                                                
+                                                <td class="py-3 px-4 text-center text-sm text-gray-500 font-mono">
+                                                    {{ set.tempo ?: '-' }}
+                                                </td>
+                                                
+                                                <td class="py-3 px-4 text-center flex items-center justify-center space-x-3">
+                                                    <label class="inline-flex items-center cursor-pointer">
+                                                        <input type="checkbox" 
+                                                               data-workout-target="isCompleted"
+                                                               data-action="change->workout#updateSet"
+                                                               {% if set.completed %}checked{% endif %}
+                                                               class="w-6 h-6 rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-offset-0 focus:ring-green-200 focus:ring-opacity-50 cursor-pointer transition-all duration-200">
+                                                    </label>
+                                                    
+                                                    <div data-workout-target="statusIcon" class="w-6 h-6 flex items-center justify-center">
+                                                        {# Ikona ładowania / sukcesu wstawiana przez JS #}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

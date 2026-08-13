@@ -57,7 +57,10 @@
 								<a href="{{ path('app_meseurments_show') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_measurements' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Pomiary</a>
 							</li>
 							<li>
-								<a href="{{ path('app_training_goal_suggestions') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route in ['app_training_goal_set', 'app_training_goal_suggestions'] ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Cele treningowe</a>
+								<a href="{{ path('app_training_goal_set') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_training_goal_set' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Ustaw cel</a>
+							</li>
+							<li>
+								<a href="{{ path('app_training_goal_suggestions') }}" class="block px-4 py-2 text-sm rounded-lg {{ current_route == 'app_training_goal_suggestions' ? 'text-blue-400 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">Cele treningowe</a>
 							</li>
 						</ul>
 					</div>
@@ -70,7 +73,9 @@
 						<a href="{{ path('app_trainer_trainees') }}" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_trainer_trainees' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
 							👥 Moi podopieczni
 						</a>
-					{% elseif is_granted('ROLE_TRAINEE') %}
+					{% endif %}
+
+					{% if is_granted('ROLE_TRAINEE') %}
 						<a href="{{ path('app_trainee_trainers') }}" class="block px-4 py-3 rounded-lg transition-colors {{ current_route == 'app_trainee_trainers' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
 							💪 Moi trenerzy
 						</a>
