@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: WorkoutExerciseRepository::class)]
 class WorkoutExercise
@@ -14,6 +15,7 @@ class WorkoutExercise
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['workout:read:full'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'workoutExercises')]
@@ -22,18 +24,22 @@ class WorkoutExercise
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['workout:read:full'])]
     private ?Exercises $exercise = null;
 
     #[ORM\Column]
+    #[Groups(['workout:read:full'])]
     private ?int $orderIndex = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['workout:read:full'])]
     private ?string $notes = null;
 
     /**
      * @var Collection<int, WorkoutExerciseSet>
      */
     #[ORM\OneToMany(targetEntity: WorkoutExerciseSet::class, mappedBy: 'workoutExercise', orphanRemoval: true, cascade: ['persist', 'remove'])]
+    #[Groups(['workout:read:full'])]
     private Collection $workoutExerciseSets;
 
     public function __construct()

@@ -6,6 +6,7 @@ use App\Repository\WorkoutExerciseSetRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: WorkoutExerciseSetRepository::class)]
 class WorkoutExerciseSet
@@ -13,6 +14,7 @@ class WorkoutExerciseSet
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'workoutExerciseSets')]
@@ -20,24 +22,31 @@ class WorkoutExerciseSet
     private ?WorkoutExercise $workoutExercise = null;
 
     #[ORM\Column]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?int $setNumber = null;
 
     #[ORM\Column]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?int $reps = null;
 
     #[ORM\Column]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?float $weight = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?string $tempo = null;
 
     #[ORM\Column]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?bool $isCompleted = false;
 
     #[ORM\Column]
+    #[Groups(['workout:read:full', 'set:read'])]
     private ?bool $isDropSet = false;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
+    #[Groups(['workout:read:full'])]
     private ?self $parentSet = null;
 
     public function getId(): ?int

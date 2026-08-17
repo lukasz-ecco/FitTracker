@@ -10,6 +10,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Ignore;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -20,17 +21,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read', 'connection:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
-    #[Ignore]
+    #[Groups(['user:read', 'connection:read'])]
     private ?string $email = null;
 
     /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
-    #[Ignore]
+    #[Groups(['user:read'])]
     private array $roles = [];
 
     /**
@@ -41,29 +43,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 150, nullable: true)]
+    #[Groups(['user:read', 'connection:read'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 150, nullable: true)]
+    #[Groups(['user:read', 'connection:read'])]
     private ?string $surrname = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['user:read'])]
     private ?int $age = null;
 
     #[ORM\Column(length: 1, nullable: true)]
+    #[Groups(['user:read'])]
     private ?int $gender = null;
 
     #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['user:read'])]
     private ?int $height = null;
 
     #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['user:read'])]
     private ?int $weight = null;
 
     #[ORM\Column(length: 150, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $profilePicture = null;
     
 
     #[ORM\Column]
-    #[Ignore]
+    #[Groups(['user:read'])]
     private bool $isVerified = false;
 
     /**

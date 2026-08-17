@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: WorkoutRepository::class)]
 class Workout
@@ -14,18 +15,23 @@ class Workout
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['workout:read', 'workout:read:full'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['workout:read', 'workout:read:full'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full'])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full'])]
     private ?\DateTimeInterface $date = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['workout:read', 'workout:read:full'])]
     private ?string $status = 'DRAFT';
 
     #[ORM\ManyToOne]
@@ -39,6 +45,7 @@ class Workout
      * @var Collection<int, WorkoutExercise>
      */
     #[ORM\OneToMany(targetEntity: WorkoutExercise::class, mappedBy: 'workout', orphanRemoval: true, cascade: ['persist', 'remove'])]
+    #[Groups(['workout:read:full'])]
     private Collection $workoutExercises;
 
     public function __construct()

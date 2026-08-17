@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\MeseurmentsRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: MeseurmentsRepository::class)]
 class Meseurments
@@ -12,13 +13,16 @@ class Meseurments
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['measurement:read'])]
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Groups(['measurement:read'])]
     private ?float $Size = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'body_part_id', referencedColumnName: 'id', nullable: false)]
+    #[Groups(['measurement:read'])]
     private ?BodyParts $bodyPart = null;
 
     #[ORM\ManyToOne(inversedBy: 'meseurments')]
@@ -28,6 +32,7 @@ class Meseurments
     #[ORM\Column]
     #[Assert\LessThanOrEqual('today', message: 'Data nie może być w przyszłości.')]
     #[Assert\GreaterThanOrEqual('-7 days', message: 'Data nie może być starsza niż 7 dni.')]
+    #[Groups(['measurement:read'])]
     private ?\DateTime $date = null;
 
     public function __construct()

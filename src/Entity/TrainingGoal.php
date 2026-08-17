@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Entity\GoalType;
 use App\Repository\TrainingGoalRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: TrainingGoalRepository::class)]
 class TrainingGoal
@@ -12,6 +13,7 @@ class TrainingGoal
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['goal:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'trainingGoals')]
@@ -20,18 +22,23 @@ class TrainingGoal
 
     #[ORM\ManyToOne(targetEntity: GoalType::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['goal:read'])]
     private ?GoalType $goalType = null;
 
     #[ORM\Column(type: 'smallint')]
+    #[Groups(['goal:read'])]
     private ?int $fitnessLevel = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    #[Groups(['goal:read'])]
     private bool $isActive = true;
 
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    #[Groups(['goal:read'])]
     private ?string $notes = null;
 
     #[ORM\Column]
+    #[Groups(['goal:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     public function __construct()

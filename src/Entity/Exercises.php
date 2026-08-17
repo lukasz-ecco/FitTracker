@@ -2,27 +2,42 @@
 
 namespace App\Entity;
 
-use App\Repository\ExercisesRepository;
-use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\ArrayCollection;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use App\Enum\TrainingGoalType;
+use App\Repository\ExercisesRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ExercisesRepository::class)]
+#[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection()
+    ],
+    normalizationContext: ['groups' => ['exercise:read']]
+)]
 class Exercises
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['exercise:read', 'workout:read:full'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 150)]
+    #[Groups(['exercise:read', 'workout:read:full'])]
     private ?string $name = null;
 
     #[ORM\Column]
+    #[Groups(['exercise:read', 'workout:read:full'])]
     private ?int $difficulty = null;
 
     #[ORM\Column(length: 150)]
+    #[Groups(['exercise:read', 'workout:read:full'])]
     private ?string $type = null;
 
     /**
