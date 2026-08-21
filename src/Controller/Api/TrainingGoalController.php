@@ -7,6 +7,8 @@ use App\Entity\TrainingGoal;
 use App\Entity\User;
 use App\Repository\TrainingGoalRepository;
 use App\Service\ExerciseSuggestionService;
+use App\Service\TrainingGoalService;
+use App\Exception\ValidationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,6 +16,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 #[Route('/api/training-goals')]
 #[IsGranted('ROLE_USER')]
@@ -30,47 +35,53 @@ class TrainingGoalController extends AbstractController
     }
 
     #[Route('', name: 'api_training_goals_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
+    public function create(Request $request, TrainingGoalService $service): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
 
-        if (!$data || !isset($data['goalTypeId']) || !isset($data['fitnessLevel'])) {
-            return new JsonResponse(['error' => 'Brak wymaganych danych (goalTypeId, fitnessLevel).'], Response::HTTP_BAD_REQUEST);
+        if (!$data) {
+            return new JsonResponse(['error' => 'Brak danych JSON.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $goalType = $em->getRepository(GoalType::class)->find($data['goalTypeId']);
-        if (!$goalType) {
-            return new JsonResponse(['error' => 'Nie znaleziono typu celu.'], Response::HTTP_NOT_FOUND);
-        }
-
-        $goal = new TrainingGoal();
-        $goal->setUser($user);
-        $goal->setGoalType($goalType);
-        $goal->setFitnessLevel((int) $data['fitnessLevel']);
-        
-        if (isset($data['notes'])) {
-            $goal->setNotes($data['notes']);
-        }
-
-        $em->persist($goal);
-        $em->flush();
-
+        $goal = $service->createGoal($user, $data);
         return $this->json($goal, Response::HTTP_CREATED, [], ['groups' => ['goal:read']]);
     }
 
     #[Route('/{id}', name: 'api_training_goals_delete', methods: ['DELETE'])]
-    public function delete(TrainingGoal $goal, EntityManagerInterface $em): JsonResponse
+    public function delete(int $id, TrainingGoalRepository $repository, TrainingGoalService $service): JsonResponse
     {
-        if ($goal->getUser() !== $this->getUser()) {
-            return new JsonResponse(['error' => 'Brak dostępu.'], Response::HTTP_FORBIDDEN);
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $goal = $repository->findUserGoal($id, $user);
+        if (!$goal) {
+            return new JsonResponse(['error' => 'Brak dostępu lub cel nie istnieje.'], Response::HTTP_NOT_FOUND);
         }
 
-        $em->remove($goal);
-        $em->flush();
-
+        $service->deleteGoal($goal, $user);
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{id}', name: 'api_training_goals_update', methods: ['PATCH', 'PUT'])]
+    public function update(int $id, Request $request, TrainingGoalRepository $repository, TrainingGoalService $service): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $goal = $repository->findUserGoal($id, $user);
+        if (!$goal) {
+            return new JsonResponse(['error' => 'Brak dostępu lub cel nie istnieje.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data) {
+            return new JsonResponse(['error' => 'Brak danych JSON.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $goal = $service->updateGoal($goal, $user, $data);
+        return $this->json($goal, Response::HTTP_OK, [], ['groups' => ['goal:read']]);
     }
 
     #[Route('/suggestions', name: 'api_training_goals_suggestions', methods: ['GET'], priority: 2)]

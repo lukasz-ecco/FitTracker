@@ -15,4 +15,17 @@ class WorkoutExerciseSetRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, WorkoutExerciseSet::class);
     }
+
+    public function findUserWorkoutExerciseSet(int $id, \App\Entity\User $user): ?WorkoutExerciseSet
+    {
+        return $this->createQueryBuilder('wes')
+            ->join('wes.workoutExercise', 'we')
+            ->join('we.workout', 'w')
+            ->andWhere('wes.id = :id')
+            ->andWhere('w.user = :user')
+            ->setParameter('id', $id)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

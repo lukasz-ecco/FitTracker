@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\TrainerTraineeConnection;
 use App\Repository\TrainerTraineeConnectionRepository;
 use App\Service\TrainerInvitationService;
+use App\Service\TrainerTraineeConnectionService;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,18 +21,19 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class TrainerTraineeController extends AbstractController
 {
     #[Route('', name: 'api_connections_get', methods: ['GET'])]
-    public function index(TrainerTraineeConnectionRepository $repository): JsonResponse
+    public function index(Request $request, TrainerTraineeConnectionRepository $repository): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
         
-        $isTrainer = in_array('ROLE_TRAINER', $user->getRoles());
+        $as = $request->query->get('as');
+        $isTrainerOrAdmin = array_intersect(['ROLE_TRAINER', 'ROLE_ADMIN'], $user->getRoles()) !== [];
         
-        if ($isTrainer) {
-            $connections = $repository->findBy(['trainer' => $user]);
-        } else {
-            $connections = $repository->findBy(['trainee' => $user]);
-        }
+        // Domyślnie pobieramy powiązania, w których użytkownik jest podopiecznym.
+        // Wyjątek: użytkownik jest trenerem/adminem i celowo nie zażądał widoku 'trainee'
+        $searchField = ($isTrainerOrAdmin && $as !== 'trainee') ? 'trainer' : 'trainee';
+        
+        $connections = $repository->findBy([$searchField => $user]);
 
         return $this->json($connections, Response::HTTP_OK, [], ['groups' => ['connection:read']]);
     }
@@ -51,68 +53,52 @@ class TrainerTraineeController extends AbstractController
             return new JsonResponse(['error' => 'Adres email jest wymagany.'], Response::HTTP_BAD_REQUEST);
         }
 
-        try {
-            $invitationService->invite($user, $data['email']);
-            return new JsonResponse(['message' => 'Zaproszenie wysłane pomyślnie.'], Response::HTTP_CREATED);
-        } catch (InvalidArgumentException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        }
+        $invitationService->invite($user, $data['email']);
+        return new JsonResponse(['message' => 'Zaproszenie wysłane pomyślnie.'], Response::HTTP_CREATED);
     }
 
     #[Route('/{id}/accept', name: 'api_connections_accept', methods: ['POST'])]
-    public function accept(TrainerTraineeConnection $connection, EntityManagerInterface $em): JsonResponse
+    public function accept(int $id, TrainerTraineeConnectionRepository $repository, TrainerTraineeConnectionService $service): JsonResponse
     {
-        if ($connection->getTrainee() !== $this->getUser()) {
-            return new JsonResponse(['error' => 'Brak dostępu.'], Response::HTTP_FORBIDDEN);
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $connection = $repository->findConnection($id, $user);
+        if (!$connection) {
+            return new JsonResponse(['error' => 'Brak dostępu lub połączenie nie istnieje.'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($connection->getStatus() !== 'PENDING') {
-            return new JsonResponse(['error' => 'Można zaakceptować tylko oczekujące zaproszenia.'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $connection->setStatus('ACCEPTED');
-        $em->flush();
-
+        $service->acceptConnection($connection, $user);
         return new JsonResponse(['message' => 'Zaproszenie zaakceptowane.']);
     }
 
     #[Route('/{id}/reject', name: 'api_connections_reject', methods: ['POST'])]
-    public function reject(TrainerTraineeConnection $connection, EntityManagerInterface $em): JsonResponse
+    public function reject(int $id, TrainerTraineeConnectionRepository $repository, TrainerTraineeConnectionService $service): JsonResponse
     {
-        if ($connection->getTrainee() !== $this->getUser()) {
-            return new JsonResponse(['error' => 'Brak dostępu.'], Response::HTTP_FORBIDDEN);
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $connection = $repository->findConnection($id, $user);
+        if (!$connection) {
+            return new JsonResponse(['error' => 'Brak dostępu lub połączenie nie istnieje.'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($connection->getStatus() !== 'PENDING') {
-            return new JsonResponse(['error' => 'Można odrzucić tylko oczekujące zaproszenia.'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $connection->setStatus('REJECTED');
-        $em->flush();
-
+        $service->rejectConnection($connection, $user);
         return new JsonResponse(['message' => 'Zaproszenie odrzucone.']);
     }
 
     #[Route('/{id}/set-main', name: 'api_connections_set_main', methods: ['POST'])]
-    public function setMain(TrainerTraineeConnection $connection, EntityManagerInterface $em, TrainerTraineeConnectionRepository $repository): JsonResponse
+    public function setMain(int $id, TrainerTraineeConnectionRepository $repository, TrainerTraineeConnectionService $service): JsonResponse
     {
-        if ($connection->getTrainee() !== $this->getUser()) {
-            return new JsonResponse(['error' => 'Brak dostępu.'], Response::HTTP_FORBIDDEN);
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $connection = $repository->findConnection($id, $user);
+        if (!$connection) {
+            return new JsonResponse(['error' => 'Brak dostępu lub połączenie nie istnieje.'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($connection->getStatus() !== 'ACCEPTED') {
-            return new JsonResponse(['error' => 'Trener musi być zaakceptowany.'], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Reset all other connections to isMain = false
-        $allUserConnections = $repository->findBy(['trainee' => $this->getUser(), 'isMain' => true]);
-        foreach ($allUserConnections as $c) {
-            $c->setIsMain(false);
-        }
-
-        $connection->setIsMain(true);
-        $em->flush();
-
+        $service->setMainConnection($connection, $user);
         return new JsonResponse(['message' => 'Główny trener został ustawiony.']);
     }
 }

@@ -62,4 +62,18 @@ class TrainingGoalRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Znajduje cel treningowy dla danego użytkownika (do autoryzacji).
+     */
+    public function findUserGoal(int $id, User $user): ?TrainingGoal
+    {
+        return $this->createQueryBuilder('tg')
+            ->andWhere('tg.id = :id')
+            ->andWhere('tg.user = :user')
+            ->setParameter('id', $id)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

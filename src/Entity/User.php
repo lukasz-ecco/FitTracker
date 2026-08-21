@@ -43,31 +43,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    #[Groups(['user:read', 'connection:read'])]
+    #[Groups(['user:read', 'connection:read', 'user:write'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    #[Groups(['user:read', 'connection:read'])]
+    #[Groups(['user:read', 'connection:read', 'user:write'])]
     private ?string $surrname = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:write'])]
     private ?int $age = null;
 
     #[ORM\Column(length: 1, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:write'])]
     private ?int $gender = null;
 
     #[ORM\Column(length: 10, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:write'])]
     private ?int $height = null;
 
     #[ORM\Column(length: 10, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:write'])]
     private ?int $weight = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'connection:read'])]
     private ?string $profilePicture = null;
     
 
