@@ -27,4 +27,22 @@ class WorkoutExerciseRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findLastCompletedWorkoutExerciseForUser(\App\Entity\User $user, \App\Entity\Exercises $exercise): ?WorkoutExercise
+    {
+        return $this->createQueryBuilder('we')
+            ->join('we.workout', 'w')
+            ->andWhere('w.user = :user')
+            ->andWhere('we.exercise = :exercise')
+            ->andWhere('w.status = :status')
+            ->andWhere('SIZE(we.workoutExerciseSets) > 0')
+            ->setParameter('user', $user)
+            ->setParameter('exercise', $exercise)
+            ->setParameter('status', 'COMPLETED')
+            ->orderBy('w.date', 'DESC')
+            ->addOrderBy('w.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

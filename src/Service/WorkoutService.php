@@ -45,6 +45,47 @@ class WorkoutService
             $workout->setDate(new \DateTime());
         }
 
+        if (isset($data['exercises']) && is_array($data['exercises'])) {
+            $orderIndex = 1;
+            foreach ($data['exercises'] as $exData) {
+                if (!isset($exData['exerciseId'])) {
+                    continue;
+                }
+                $exercise = $this->em->getRepository(Exercises::class)->find($exData['exerciseId']);
+                if (!$exercise) {
+                    continue;
+                }
+                $we = new WorkoutExercise();
+                $we->setWorkout($workout);
+                $we->setExercise($exercise);
+                $we->setOrderIndex($orderIndex++);
+                if (isset($exData['notes'])) {
+                    $we->setNotes($exData['notes']);
+                }
+                $this->em->persist($we);
+                $workout->getWorkoutExercises()->add($we);
+
+                if (isset($exData['sets']) && is_array($exData['sets'])) {
+                    $setNumber = 1;
+                    foreach ($exData['sets'] as $setData) {
+                        $set = new WorkoutExerciseSet();
+                        $set->setWorkoutExercise($we);
+                        $set->setSetNumber(isset($setData['setNumber']) ? (int) $setData['setNumber'] : $setNumber++);
+                        $set->setReps((int) ($setData['reps'] ?? 8));
+                        $set->setWeight(isset($setData['weight']) && $setData['weight'] !== null ? (float) $setData['weight'] : 0.0);
+                        if (isset($setData['tempo'])) {
+                            $set->setTempo($setData['tempo']);
+                        }
+                        if (isset($setData['isDropSet'])) {
+                            $set->setDropSet((bool) $setData['isDropSet']);
+                        }
+                        $this->em->persist($set);
+                        $we->getWorkoutExerciseSets()->add($set);
+                    }
+                }
+            }
+        }
+
         $errors = $this->validator->validate($workout);
         if (count($errors) > 0) {
             throw new ValidationException($errors);
@@ -56,10 +97,58 @@ class WorkoutService
         return $workout;
     }
 
+    public function getLastExerciseHistory(User $user, int $exerciseId): array
+    {
+        $exercise = $this->em->getRepository(Exercises::class)->find($exerciseId);
+        if (!$exercise) {
+            throw new NotFoundHttpException('Ćwiczenie nie zostało znalezione.');
+        }
+
+        /** @var \App\Repository\WorkoutExerciseRepository $weRepo */
+        $weRepo = $this->em->getRepository(WorkoutExercise::class);
+        $lastWe = $weRepo->findLastCompletedWorkoutExerciseForUser($user, $exercise);
+
+        if ($lastWe && $lastWe->getWorkoutExerciseSets()->count() > 0) {
+            $sets = [];
+            $entitySets = $lastWe->getWorkoutExerciseSets()->toArray();
+            usort($entitySets, fn($a, $b) => $a->getSetNumber() <=> $b->getSetNumber());
+
+            foreach ($entitySets as $set) {
+                $sets[] = [
+                    'setNumber' => $set->getSetNumber(),
+                    'reps' => $set->getReps(),
+                    'weight' => $set->getWeight(),
+                    'tempo' => $set->getTempo(),
+                    'isDropSet' => $set->isDropSet(),
+                ];
+            }
+
+            return [
+                'hasHistory' => true,
+                'workoutDate' => $lastWe->getWorkout()->getDate()?->format(\DateTimeInterface::ATOM),
+                'sets' => $sets,
+            ];
+        }
+
+        return [
+            'hasHistory' => false,
+            'workoutDate' => null,
+            'sets' => [
+                ['setNumber' => 1, 'reps' => 8, 'weight' => null, 'tempo' => null, 'isDropSet' => false],
+                ['setNumber' => 2, 'reps' => 8, 'weight' => null, 'tempo' => null, 'isDropSet' => false],
+                ['setNumber' => 3, 'reps' => 8, 'weight' => null, 'tempo' => null, 'isDropSet' => false],
+            ],
+        ];
+    }
+
     public function updateWorkout(Workout $workout, User $user, array $data): Workout
     {
         if ($workout->getUser()->getId() !== $user->getId()) {
             throw new AccessDeniedException('Brak dostępu.');
+        }
+
+        if ($workout->getStatus() === 'COMPLETED') {
+            throw new \InvalidArgumentException('Nie można modyfikować zakończonego treningu.');
         }
 
         if (isset($data['name'])) {
@@ -70,6 +159,12 @@ class WorkoutService
         }
         if (isset($data['status'])) {
             $workout->setStatus($data['status']);
+        }
+        if (isset($data['duration'])) {
+            $workout->setDuration((int) $data['duration']);
+        }
+        if (isset($data['volume'])) {
+            $workout->setVolume((float) $data['volume']);
         }
         if (isset($data['date'])) {
             try {
@@ -104,6 +199,10 @@ class WorkoutService
     {
         if ($workout->getUser()->getId() !== $user->getId()) {
             throw new AccessDeniedException('Brak dostępu.');
+        }
+
+        if ($workout->getStatus() === 'COMPLETED') {
+            throw new \InvalidArgumentException('Nie można modyfikować zakończonego treningu.');
         }
 
         if (!isset($data['exerciseId'])) {
@@ -143,6 +242,10 @@ class WorkoutService
             throw new AccessDeniedException('Brak dostępu.');
         }
 
+        if ($workoutExercise->getWorkout()->getStatus() === 'COMPLETED') {
+            throw new \InvalidArgumentException('Nie można modyfikować zakończonego treningu.');
+        }
+
         if (!isset($data['reps']) || !isset($data['weight'])) {
             throw new \InvalidArgumentException('Brak reps lub weight.');
         }
@@ -175,6 +278,10 @@ class WorkoutService
             throw new AccessDeniedException('Brak dostępu.');
         }
 
+        if ($set->getWorkoutExercise()->getWorkout()->getStatus() === 'COMPLETED') {
+            throw new \InvalidArgumentException('Nie można modyfikować zakończonego treningu.');
+        }
+
         if (isset($data['reps'])) $set->setReps((int) $data['reps']);
         if (isset($data['weight'])) $set->setWeight((float) $data['weight']);
         if (isset($data['isCompleted'])) $set->setCompleted((bool) $data['isCompleted']);
@@ -197,6 +304,10 @@ class WorkoutService
 
     public function cleanupEmptySets(Workout $workout): void
     {
+        if ($workout->getStatus() === 'COMPLETED') {
+            return;
+        }
+
         $hasDeleted = false;
         foreach ($workout->getWorkoutExercises() as $we) {
             foreach ($we->getWorkoutExerciseSets() as $set) {

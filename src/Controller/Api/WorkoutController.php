@@ -27,13 +27,20 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class WorkoutController extends AbstractController
 {
     #[Route('', name: 'api_workouts_get', methods: ['GET'])]
-    public function index(WorkoutRepository $repository): JsonResponse
+    public function index(Request $request, WorkoutRepository $repository): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
-        $workouts = $repository->findBy(['user' => $user], ['date' => 'DESC']);
 
-        return $this->json($workouts, Response::HTTP_OK, [], ['groups' => ['workout:read']]);
+        $status = $request->query->get('status');
+        $criteria = ['user' => $user];
+        if ($status) {
+            $criteria['status'] = $status;
+        }
+
+        $workouts = $repository->findBy($criteria, ['date' => 'DESC', 'name' => 'ASC']);
+
+        return $this->json($workouts, Response::HTTP_OK, [], ['groups' => ['workout:read:full', 'exercise:read', 'template:read']]);
     }
 
     #[Route('/{id}', name: 'api_workouts_show', methods: ['GET'])]
@@ -65,7 +72,7 @@ class WorkoutController extends AbstractController
         }
         
         $workout = $service->createWorkout($user, $data);
-        return $this->json($workout, Response::HTTP_CREATED, [], ['groups' => ['workout:read']]);
+        return $this->json($workout, Response::HTTP_CREATED, [], ['groups' => ['workout:read', 'workout:read:full']]);
     }
 
     #[Route('/{id}', name: 'api_workouts_update', methods: ['PUT', 'PATCH'])]

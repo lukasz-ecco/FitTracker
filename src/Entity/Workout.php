@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Ignore;
 
 #[ORM\Entity(repositoryClass: WorkoutRepository::class)]
 class Workout
@@ -34,12 +35,39 @@ class Workout
     #[Groups(['workout:read', 'workout:read:full'])]
     private ?string $status = 'DRAFT';
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full'])]
+    private ?int $duration = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full'])]
+    private ?float $volume = null;
+
+
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
     #[ORM\ManyToOne]
     private ?User $trainer = null;
+
+    #[ORM\ManyToOne(targetEntity: TrainingPlan::class, inversedBy: 'workouts')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Ignore]
+    private ?TrainingPlan $trainingPlan = null;
+
+    #[ORM\ManyToOne(targetEntity: WorkoutTemplate::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['workout:read', 'workout:read:full'])]
+    private ?WorkoutTemplate $template = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full', 'plan:read:full'])]
+    private ?int $dayNumber = null;
+
+    #[ORM\Column(options: ['default' => false])]
+    #[Groups(['workout:read', 'workout:read:full', 'plan:read:full'])]
+    private bool $isRestDay = false;
 
     /**
      * @var Collection<int, WorkoutExercise>
@@ -102,6 +130,29 @@ class Workout
         return $this;
     }
 
+    public function getDuration(): ?int
+    {
+        return $this->duration;
+    }
+
+    public function setDuration(?int $duration): static
+    {
+        $this->duration = $duration;
+        return $this;
+    }
+
+    public function getVolume(): ?float
+    {
+        return $this->volume;
+    }
+
+    public function setVolume(?float $volume): static
+    {
+        $this->volume = $volume;
+        return $this;
+    }
+
+
     public function getUser(): ?User
     {
         return $this->user;
@@ -151,6 +202,63 @@ class Workout
             }
         }
 
+        return $this;
+    }
+
+    #[Ignore]
+    public function getTrainingPlan(): ?TrainingPlan
+    {
+        return $this->trainingPlan;
+    }
+
+    #[Groups(['workout:read', 'workout:read:full'])]
+    public function getTrainingPlanId(): ?int
+    {
+        return $this->trainingPlan?->getId();
+    }
+
+    #[Groups(['workout:read', 'workout:read:full'])]
+    public function getTrainingPlanName(): ?string
+    {
+        return $this->trainingPlan?->getName();
+    }
+
+    public function setTrainingPlan(?TrainingPlan $trainingPlan): static
+    {
+        $this->trainingPlan = $trainingPlan;
+        return $this;
+    }
+
+    public function getDayNumber(): ?int
+    {
+        return $this->dayNumber;
+    }
+
+    public function setDayNumber(?int $dayNumber): static
+    {
+        $this->dayNumber = $dayNumber;
+        return $this;
+    }
+
+    public function isRestDay(): bool
+    {
+        return $this->isRestDay;
+    }
+
+    public function setIsRestDay(bool $isRestDay): static
+    {
+        $this->isRestDay = $isRestDay;
+        return $this;
+    }
+
+    public function getTemplate(): ?WorkoutTemplate
+    {
+        return $this->template;
+    }
+
+    public function setTemplate(?WorkoutTemplate $template): static
+    {
+        $this->template = $template;
         return $this;
     }
 }

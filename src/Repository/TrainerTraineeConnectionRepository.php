@@ -26,4 +26,17 @@ class TrainerTraineeConnectionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findAcceptedConnection(\App\Entity\User $trainer, \App\Entity\User $trainee): ?TrainerTraineeConnection
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.trainer = :trainer')
+            ->andWhere('t.trainee = :trainee')
+            ->andWhere('t.status = :status')
+            ->setParameter('trainer', $trainer)
+            ->setParameter('trainee', $trainee)
+            ->setParameter('status', 'ACCEPTED')
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

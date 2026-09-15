@@ -9,17 +9,11 @@ use App\Enum\TrainingGoalType;
 use App\Repository\ExercisesRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ExercisesRepository::class)]
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection()
-    ],
-    normalizationContext: ['groups' => ['exercise:read']]
-)]
 class Exercises
 {
     #[ORM\Id]
@@ -39,6 +33,17 @@ class Exercises
     #[ORM\Column(length: 150)]
     #[Groups(['exercise:read', 'workout:read:full'])]
     private ?string $type = null;
+
+    #[ORM\Column(length: 512, nullable: true)]
+    #[Groups(['exercise:read', 'workout:read:full'])]
+    private ?string $gifUrl = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['exercise:read', 'workout:read:full'])]
+    private ?string $description = null;
+
+    #[ORM\Column(length: 100, nullable: true, unique: true)]
+    private ?string $externalId = null;
 
     /**
      * @var Collection<int, ExerciseMuscle>
@@ -95,6 +100,42 @@ class Exercises
     public function setType(string $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getGifUrl(): ?string
+    {
+        return $this->gifUrl;
+    }
+
+    public function setGifUrl(?string $gifUrl): static
+    {
+        $this->gifUrl = $gifUrl;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getExternalId(): ?string
+    {
+        return $this->externalId;
+    }
+
+    public function setExternalId(?string $externalId): static
+    {
+        $this->externalId = $externalId;
 
         return $this;
     }

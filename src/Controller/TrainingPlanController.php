@@ -24,7 +24,7 @@ class TrainingPlanController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         
-        $workouts = $workoutRepository->findBy(['user' => $user], ['date' => 'DESC']);
+        $workouts = $workoutRepository->findBy(['user' => $user], ['date' => 'DESC', 'name' => 'ASC']);
 
         return $this->render('training_plan/index.html.twig', [
             'workouts' => $workouts,
@@ -41,6 +41,20 @@ class TrainingPlanController extends AbstractController
         return $this->render('training_plan/show.html.twig', [
             'workout' => $workout,
         ]);
+    }
+
+    #[Route('/{id}/complete', name: 'app_training_plan_complete', methods: ['POST'])]
+    public function complete(Workout $workout, EntityManagerInterface $em): Response
+    {
+        if ($workout->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException('Nie masz dostępu do tego treningu.');
+        }
+
+        $workout->setStatus('COMPLETED');
+        $em->flush();
+
+        $this->addFlash('success', 'Trening został pomyślnie zakończony!');
+        return $this->redirectToRoute('app_training_plan_show', ['id' => $workout->getId()]);
     }
 
     #[Route('/set/{id}/update', name: 'app_training_plan_set_update', methods: ['POST', 'PATCH'])]

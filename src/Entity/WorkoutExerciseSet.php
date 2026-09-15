@@ -120,6 +120,12 @@ class WorkoutExerciseSet
         return $this;
     }
 
+    public function setIsCompleted(bool $isCompleted): static
+    {
+        $this->isCompleted = $isCompleted;
+        return $this;
+    }
+
     public function isDropSet(): ?bool
     {
         return $this->isDropSet;

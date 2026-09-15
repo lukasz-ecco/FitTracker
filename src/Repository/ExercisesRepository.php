@@ -84,4 +84,57 @@ class ExercisesRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Zwraca ćwiczenia które mają zewnętrzny URL gifUrl (zaczyna się od 'http')
+     * lub mają null gifUrl ale posiadają externalId (można pobrać GIF z API).
+     * Używane przez komendę app:import-exercises --gifs-only.
+     *
+     * @return Exercises[]
+     */
+    public function findWithExternalGifUrl(): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.gifUrl LIKE :http')
+            ->orWhere('e.gifUrl IS NULL AND e.externalId IS NOT NULL')
+            ->setParameter('http', 'http%')
+            ->orderBy('e.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Wyszukuje ćwiczenia w całej bazie danych:
+     * - z opcjonalnym filtrowaniem po fragmencie nazwy (case-insensitive),
+     * - posortowane w 1. kolejności malejąco po popularności (liczba użyć w WorkoutExercise),
+     * - w 2. kolejności alfabetycznie po nazwie rosnąco,
+     * - z paginacją (offset, limit).
+     *
+     * @param string|null $search
+     * @param int $page
+     * @param int $limit
+     * @return Exercises[]
+     */
+    public function searchExercises(?string $search = null, int $page = 1, int $limit = 20): array
+    {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+
+        $qb = $this->createQueryBuilder('e')
+            ->leftJoin(\App\Entity\WorkoutExercise::class, 'we', \Doctrine\ORM\Query\Expr\Join::WITH, 'we.exercise = e')
+            ->groupBy('e.id');
+
+        if ($search !== null && trim($search) !== '') {
+            $qb->andWhere('LOWER(e.name) LIKE :search')
+               ->setParameter('search', '%' . mb_strtolower(trim($search)) . '%');
+        }
+
+        return $qb->addSelect('COUNT(we.id) AS HIDDEN popularity')
+            ->orderBy('popularity', 'DESC')
+            ->addOrderBy('e.name', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
