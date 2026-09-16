@@ -69,6 +69,18 @@ class Workout
     #[Groups(['workout:read', 'workout:read:full', 'plan:read:full'])]
     private bool $isRestDay = false;
 
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full', 'plan:read:full'])]
+    private ?string $activityType = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full', 'plan:read:full'])]
+    private ?int $plannedDurationMinutes = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['workout:read', 'workout:read:full', 'plan:read:full'])]
+    private ?float $plannedDistanceKm = null;
+
     /**
      * @var Collection<int, WorkoutExercise>
      */
@@ -248,6 +260,39 @@ class Workout
     public function setIsRestDay(bool $isRestDay): static
     {
         $this->isRestDay = $isRestDay;
+        return $this;
+    }
+
+    public function getActivityType(): ?string
+    {
+        return $this->activityType;
+    }
+
+    public function setActivityType(?string $activityType): static
+    {
+        $this->activityType = $activityType;
+        return $this;
+    }
+
+    public function getPlannedDurationMinutes(): ?int
+    {
+        return $this->plannedDurationMinutes;
+    }
+
+    public function setPlannedDurationMinutes(?int $plannedDurationMinutes): static
+    {
+        $this->plannedDurationMinutes = $plannedDurationMinutes;
+        return $this;
+    }
+
+    public function getPlannedDistanceKm(): ?float
+    {
+        return $this->plannedDistanceKm;
+    }
+
+    public function setPlannedDistanceKm(?float $plannedDistanceKm): static
+    {
+        $this->plannedDistanceKm = $plannedDistanceKm;
         return $this;
     }
 

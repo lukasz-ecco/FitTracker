@@ -103,4 +103,63 @@ class TrainingPlanApiControllerTest extends WebTestCase
         $client->request('DELETE', "/api/training-plans/workouts/{$workoutId}");
         $this->assertResponseStatusCodeSame(204);
     }
+
+    public function testRecommendedWorkoutAndStartSession(): void
+    {
+        $client = static::createClient();
+        $user = $this->createAndLoginUser($client);
+
+        // Utworzenie planu z 4 dniami cyklu (2 treningowe, 2 rest)
+        $payload = [
+            'name' => 'Plan FBW 4-dniowy',
+            'cycleDays' => 4,
+            'isActive' => true,
+            'workouts' => [
+                [
+                    'name' => 'FBW A',
+                    'dayNumber' => 1,
+                    'isRestDay' => false,
+                ],
+                [
+                    'name' => 'Regeneracja 1',
+                    'dayNumber' => 2,
+                    'isRestDay' => true,
+                ],
+                [
+                    'name' => 'FBW B',
+                    'dayNumber' => 3,
+                    'isRestDay' => false,
+                ],
+                [
+                    'name' => 'Regeneracja 2',
+                    'dayNumber' => 4,
+                    'isRestDay' => true,
+                ]
+            ]
+        ];
+
+        $client->request('POST', '/api/training-plans', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
+        $this->assertResponseStatusCodeSame(201);
+        $planData = json_decode($client->getResponse()->getContent(), true);
+        $day1WorkoutId = $planData['workouts'][0]['id'];
+
+        // GET /api/training-plans/active/recommended-workout
+        $client->request('GET', '/api/training-plans/active/recommended-workout');
+        $this->assertResponseIsSuccessful();
+        $recommendation = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertTrue($recommendation['hasActivePlan']);
+        $this->assertNotNull($recommendation['recommendedWorkout']);
+        $this->assertContains($recommendation['status'], ['TODAY', 'OVERDUE', 'NEXT_IN_CYCLE']);
+        $this->assertNotEmpty($recommendation['allPlanWorkouts']);
+
+        // POST /api/training-plans/workouts/{workoutId}/start
+        $client->request('POST', "/api/training-plans/workouts/{$day1WorkoutId}/start");
+        $this->assertResponseStatusCodeSame(201);
+        $startedSession = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertEquals('FBW A', $startedSession['name']);
+        $this->assertEquals('IN_PROGRESS', $startedSession['status']);
+        $this->assertArrayHasKey('workoutExercises', $startedSession);
+    }
 }

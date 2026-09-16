@@ -55,6 +55,36 @@ class TrainingPlanApiController extends AbstractController
         return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'workout:read:full', 'exercise:read', 'template:read']]);
     }
 
+    #[Route('/active/recommended-workout', name: 'api_training_plans_recommended_workout', methods: ['GET'])]
+    public function recommendedWorkout(TrainingPlanService $service): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $recommendation = $service->getRecommendedWorkout($user);
+        if (!$recommendation) {
+            return new JsonResponse(['hasActivePlan' => false], Response::HTTP_OK);
+        }
+
+        return $this->json($recommendation, Response::HTTP_OK, [], [
+            'groups' => ['plan:read', 'workout:read:full', 'exercise:read', 'template:read']
+        ]);
+    }
+
+    #[Route('/workouts/{workoutId}/start', name: 'api_training_plans_start_workout', requirements: ['workoutId' => '\d+'], methods: ['POST'])]
+    public function startWorkout(
+        int $workoutId,
+        TrainingPlanService $service
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $session = $service->startWorkoutFromPlan($user, $workoutId);
+        return $this->json($session, Response::HTTP_CREATED, [], [
+            'groups' => ['workout:read:full', 'exercise:read', 'plan:read']
+        ]);
+    }
+
     #[Route('/{id}', name: 'api_training_plans_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(int $id, TrainingPlanRepository $repository): JsonResponse
     {
@@ -67,6 +97,24 @@ class TrainingPlanApiController extends AbstractController
         }
 
         return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'workout:read:full', 'exercise:read', 'template:read']]);
+    }
+
+    #[Route('/{id}/cycle-analysis', name: 'api_training_plans_cycle_analysis', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function cycleAnalysis(
+        int $id,
+        TrainingPlanRepository $repository,
+        TrainingPlanService $service
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $plan = $repository->findUserPlan($id, $user);
+        if (!$plan) {
+            throw new NotFoundHttpException('Nie znaleziono planu treningowego.');
+        }
+
+        $analysis = $service->getCycleAnalysis($plan);
+        return $this->json($analysis, Response::HTTP_OK);
     }
 
     #[Route('', name: 'api_training_plans_create', methods: ['POST'])]

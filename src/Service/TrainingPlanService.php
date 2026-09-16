@@ -13,7 +13,11 @@ use App\Repository\TrainerTraineeConnectionRepository;
 use App\Repository\UserRepository;
 use App\Repository\WorkoutRepository;
 use App\Repository\WorkoutTemplateRepository;
+use App\Service\TrainingPlan\TrainingPlanCycleAnalyzer;
+use App\Service\TrainingPlan\TrainingPlanRecommendationService;
+use App\Service\TrainingPlan\TrainingPlanSessionLauncher;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -26,8 +30,15 @@ class TrainingPlanService
         private UserRepository $userRepository,
         private WorkoutRepository $workoutRepository,
         private TrainingPlanRepository $planRepository,
-        private ?WorkoutTemplateRepository $templateRepository = null
-    ) {}
+        private ?WorkoutTemplateRepository $templateRepository = null,
+        private ?TrainingPlanCycleAnalyzer $cycleAnalyzer = null,
+        private ?TrainingPlanRecommendationService $recommendationService = null,
+        private ?TrainingPlanSessionLauncher $sessionLauncher = null
+    ) {
+        $this->cycleAnalyzer ??= new TrainingPlanCycleAnalyzer();
+        $this->recommendationService ??= new TrainingPlanRecommendationService($this->planRepository, $this->workoutRepository);
+        $this->sessionLauncher ??= new TrainingPlanSessionLauncher($this->em, $this->workoutRepository);
+    }
 
     public function createPlan(User $creator, array $data): TrainingPlan
     {
@@ -56,6 +67,11 @@ class TrainingPlanService
         $plan->setUser($targetUser);
         $plan->setCreator($creator);
 
+        $cycleDays = isset($data['cycleDays']) ? max(1, (int) $data['cycleDays']) : (
+            !empty($data['workouts']) ? max(1, ...array_map(fn($w) => (int) ($w['dayNumber'] ?? 1), $data['workouts'])) : 7
+        );
+        $plan->setCycleDays($cycleDays);
+
         if (isset($data['description'])) {
             $plan->setDescription($data['description']);
         }
@@ -64,6 +80,31 @@ class TrainingPlanService
         if ($isActive) {
             $this->deactivateUserPlans($targetUser);
             $plan->setIsActive(true);
+        }
+
+        // Walidacja wypełnienia wszystkich dni cyklu
+        if (isset($data['cycleDays']) && !empty($data['workouts']) && is_array($data['workouts'])) {
+            $coveredDays = [];
+            foreach ($data['workouts'] as $wData) {
+                if (isset($wData['dayNumber'])) {
+                    $coveredDays[(int) $wData['dayNumber']] = true;
+                }
+            }
+
+            $missingDays = [];
+            for ($d = 1; $d <= $cycleDays; $d++) {
+                if (!isset($coveredDays[$d])) {
+                    $missingDays[] = $d;
+                }
+            }
+
+            if (!empty($missingDays)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Wszystkie %d dni cyklu muszą zostać zdefiniowane. Brakujące dni: %s. Zdefiniuj trening, aktywność lub oznacz jako dzień odpoczynku.',
+                    $cycleDays,
+                    implode(', ', $missingDays)
+                ));
+            }
         }
 
         $errors = $this->validator->validate($plan);
@@ -94,6 +135,10 @@ class TrainingPlanService
                 throw new \InvalidArgumentException('Nazwa planu nie może być pusta.');
             }
             $plan->setName($data['name']);
+        }
+
+        if (isset($data['cycleDays'])) {
+            $plan->setCycleDays(max(1, (int) $data['cycleDays']));
         }
 
         if (array_key_exists('description', $data)) {
@@ -213,6 +258,29 @@ class TrainingPlanService
             }
         }
 
+        if (array_key_exists('isRestDay', $data)) {
+            $workout->setIsRestDay((bool) $data['isRestDay']);
+        }
+
+        if (array_key_exists('activityType', $data)) {
+            $workout->setActivityType($data['activityType']);
+            if ($data['activityType'] && $data['activityType'] !== 'WORKOUT') {
+                $workout->setIsRestDay(true);
+            }
+        }
+
+        if (array_key_exists('plannedDurationMinutes', $data)) {
+            $workout->setPlannedDurationMinutes($data['plannedDurationMinutes'] !== null ? (int) $data['plannedDurationMinutes'] : null);
+        }
+
+        if (array_key_exists('plannedDistanceKm', $data)) {
+            $workout->setPlannedDistanceKm($data['plannedDistanceKm'] !== null ? (float) $data['plannedDistanceKm'] : null);
+        }
+
+        if (isset($data['dayNumber'])) {
+            $workout->setDayNumber((int) $data['dayNumber']);
+        }
+
         $errors = $this->validator->validate($workout);
         if (count($errors) > 0) {
             throw new ValidationException($errors);
@@ -238,7 +306,19 @@ class TrainingPlanService
 
     private function addWorkoutToPlanInternal(TrainingPlan $plan, User $user, array $data): Workout
     {
+        $activityType = $data['activityType'] ?? null;
         $isRestDay = !empty($data['isRestDay']);
+
+        if ($activityType === 'FULL_REST') {
+            $isRestDay = true;
+        } elseif ($activityType && $activityType !== 'WORKOUT') {
+            $isRestDay = true;
+        } elseif ($isRestDay && empty($activityType)) {
+            $activityType = 'FULL_REST';
+        } elseif (!$isRestDay && empty($activityType)) {
+            $activityType = 'WORKOUT';
+        }
+
         $dayNumber = isset($data['dayNumber']) ? (int) $data['dayNumber'] : ($plan->getWorkouts()->count() + 1);
 
         // Opcja 1: Utworzenie dnia na podstawie szablonu (WorkoutTemplate)
@@ -265,6 +345,13 @@ class TrainingPlanService
             $workout->setTemplate($template);
             $workout->setDayNumber($dayNumber);
             $workout->setIsRestDay($isRestDay);
+            $workout->setActivityType($activityType);
+            if (isset($data['plannedDurationMinutes'])) {
+                $workout->setPlannedDurationMinutes((int) $data['plannedDurationMinutes']);
+            }
+            if (isset($data['plannedDistanceKm'])) {
+                $workout->setPlannedDistanceKm((float) $data['plannedDistanceKm']);
+            }
             $workout->setStatus('PLANNED');
 
             $notes = $data['notes'] ?? $template->getDescription();
@@ -317,6 +404,13 @@ class TrainingPlanService
             $workout->setTrainingPlan($plan);
             $workout->setDayNumber($dayNumber);
             $workout->setIsRestDay($isRestDay);
+            $workout->setActivityType($activityType);
+            if (isset($data['plannedDurationMinutes'])) {
+                $workout->setPlannedDurationMinutes((int) $data['plannedDurationMinutes']);
+            }
+            if (isset($data['plannedDistanceKm'])) {
+                $workout->setPlannedDistanceKm((float) $data['plannedDistanceKm']);
+            }
 
             if (isset($data['notes'])) {
                 $workout->setDescription($data['notes']);
@@ -324,10 +418,8 @@ class TrainingPlanService
             return $workout;
         }
 
-        // Opcja 2: Utworzenie nowego dnia w planie
-        $name = !empty($data['name']) 
-            ? $data['name'] 
-            : ($isRestDay ? "Dzień $dayNumber - Odpoczynek" : "Dzień $dayNumber - Trening");
+        // Opcja 3: Utworzenie nowego dnia w planie
+        $name = !empty($data['name']) ? $data['name'] : $this->getDefaultDayName($dayNumber, $activityType, $isRestDay);
 
         $workout = new Workout();
         $workout->setName($name);
@@ -338,6 +430,13 @@ class TrainingPlanService
         $workout->setTrainingPlan($plan);
         $workout->setDayNumber($dayNumber);
         $workout->setIsRestDay($isRestDay);
+        $workout->setActivityType($activityType);
+        if (isset($data['plannedDurationMinutes'])) {
+            $workout->setPlannedDurationMinutes((int) $data['plannedDurationMinutes']);
+        }
+        if (isset($data['plannedDistanceKm'])) {
+            $workout->setPlannedDistanceKm((float) $data['plannedDistanceKm']);
+        }
         $workout->setStatus('PLANNED');
 
         $notes = $data['notes'] ?? $data['description'] ?? null;
@@ -356,6 +455,20 @@ class TrainingPlanService
         return $workout;
     }
 
+    private function getDefaultDayName(int $dayNumber, ?string $activityType, bool $isRestDay): string
+    {
+        return match ($activityType) {
+            'FULL_REST' => "Dzień $dayNumber - Odpoczynek",
+            'WALK' => "Dzień $dayNumber - Spacer",
+            'CYCLING' => "Dzień $dayNumber - Rower",
+            'RUNNING' => "Dzień $dayNumber - Bieganie",
+            'SWIMMING' => "Dzień $dayNumber - Pływanie",
+            'YOGA' => "Dzień $dayNumber - Joga",
+            'STRETCHING' => "Dzień $dayNumber - Rozciąganie",
+            default => $isRestDay ? "Dzień $dayNumber - Odpoczynek" : "Dzień $dayNumber - Trening",
+        };
+    }
+
     private function deactivateUserPlans(User $user): void
     {
         $activePlans = $this->planRepository->findBy(['user' => $user, 'isActive' => true]);
@@ -372,5 +485,20 @@ class TrainingPlanService
         if (!$isOwner && !$isCreator) {
             throw new AccessDeniedException('Brak uprawnień do tego planu treningowego.');
         }
+    }
+
+    public function getCycleAnalysis(TrainingPlan $plan): array
+    {
+        return $this->cycleAnalyzer->analyzeCycle($plan);
+    }
+
+    public function getRecommendedWorkout(User $user, ?\DateTimeInterface $now = null): ?array
+    {
+        return $this->recommendationService->getRecommendedWorkout($user, $now);
+    }
+
+    public function startWorkoutFromPlan(User $user, int $planWorkoutId): Workout
+    {
+        return $this->sessionLauncher->startWorkoutFromPlan($user, $planWorkoutId);
     }
 }

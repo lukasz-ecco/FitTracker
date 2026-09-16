@@ -41,6 +41,10 @@ class TrainingPlan
     #[Groups(['plan:read', 'plan:read:full'])]
     private bool $isActive = false;
 
+    #[ORM\Column(options: ['default' => 7])]
+    #[Groups(['plan:read', 'plan:read:full'])]
+    private int $cycleDays = 7;
+
     #[ORM\Column]
     #[Groups(['plan:read', 'plan:read:full'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -116,6 +120,17 @@ class TrainingPlan
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function getCycleDays(): int
+    {
+        return $this->cycleDays;
+    }
+
+    public function setCycleDays(int $cycleDays): static
+    {
+        $this->cycleDays = $cycleDays;
         return $this;
     }
 
