@@ -20,10 +20,11 @@ class TrainingPlanRepository extends ServiceEntityRepository
     public function findUserPlan(int $id, User $user): ?TrainingPlan
     {
         return $this->createQueryBuilder('p')
-            ->leftJoin('p.workouts', 'w')->addSelect('w')
-            ->leftJoin('w.workoutExercises', 'we')->addSelect('we')
-            ->leftJoin('we.exercise', 'e')->addSelect('e')
-            ->leftJoin('we.workoutExerciseSets', 's')->addSelect('s')
+            ->leftJoin('p.days', 'd')->addSelect('d')
+            ->leftJoin('d.exercises', 'de')->addSelect('de')
+            ->leftJoin('de.exercise', 'e')->addSelect('e')
+            ->leftJoin('de.sets', 's')->addSelect('s')
+            ->leftJoin('d.template', 't')->addSelect('t')
             ->andWhere('p.id = :id')
             ->andWhere('p.user = :user OR p.creator = :user')
             ->setParameter('id', $id)
@@ -38,7 +39,7 @@ class TrainingPlanRepository extends ServiceEntityRepository
     public function findUserPlans(User $user): array
     {
         return $this->createQueryBuilder('p')
-            ->leftJoin('p.workouts', 'w')->addSelect('w')
+            ->leftJoin('p.days', 'd')->addSelect('d')
             ->andWhere('p.user = :user OR p.creator = :user')
             ->setParameter('user', $user)
             ->orderBy('p.isActive', 'DESC')
@@ -50,10 +51,11 @@ class TrainingPlanRepository extends ServiceEntityRepository
     public function findActivePlan(User $user): ?TrainingPlan
     {
         return $this->createQueryBuilder('p')
-            ->leftJoin('p.workouts', 'w')->addSelect('w')
-            ->leftJoin('w.workoutExercises', 'we')->addSelect('we')
-            ->leftJoin('we.exercise', 'e')->addSelect('e')
-            ->leftJoin('we.workoutExerciseSets', 's')->addSelect('s')
+            ->leftJoin('p.days', 'd')->addSelect('d')
+            ->leftJoin('d.exercises', 'de')->addSelect('de')
+            ->leftJoin('de.exercise', 'e')->addSelect('e')
+            ->leftJoin('de.sets', 's')->addSelect('s')
+            ->leftJoin('d.template', 't')->addSelect('t')
             ->andWhere('p.user = :user')
             ->andWhere('p.isActive = true')
             ->setParameter('user', $user)
@@ -67,7 +69,7 @@ class TrainingPlanRepository extends ServiceEntityRepository
     public function findTrainerPlansForTrainee(User $trainer, User $trainee): array
     {
         return $this->createQueryBuilder('p')
-            ->leftJoin('p.workouts', 'w')->addSelect('w')
+            ->leftJoin('p.days', 'd')->addSelect('d')
             ->andWhere('p.creator = :trainer')
             ->andWhere('p.user = :trainee')
             ->setParameter('trainer', $trainer)

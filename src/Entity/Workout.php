@@ -51,10 +51,15 @@ class Workout
     #[ORM\ManyToOne]
     private ?User $trainer = null;
 
-    #[ORM\ManyToOne(targetEntity: TrainingPlan::class, inversedBy: 'workouts')]
+    #[ORM\ManyToOne(targetEntity: TrainingPlan::class, inversedBy: 'executedWorkouts')]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Ignore]
     private ?TrainingPlan $trainingPlan = null;
+
+    #[ORM\ManyToOne(targetEntity: TrainingPlanDay::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['workout:read', 'workout:read:full'])]
+    private ?TrainingPlanDay $planDay = null;
 
     #[ORM\ManyToOne(targetEntity: WorkoutTemplate::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
@@ -304,6 +309,17 @@ class Workout
     public function setTemplate(?WorkoutTemplate $template): static
     {
         $this->template = $template;
+        return $this;
+    }
+
+    public function getPlanDay(): ?TrainingPlanDay
+    {
+        return $this->planDay;
+    }
+
+    public function setPlanDay(?TrainingPlanDay $planDay): static
+    {
+        $this->planDay = $planDay;
         return $this;
     }
 }

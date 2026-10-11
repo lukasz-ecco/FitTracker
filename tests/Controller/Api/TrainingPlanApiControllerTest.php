@@ -162,4 +162,78 @@ class TrainingPlanApiControllerTest extends WebTestCase
         $this->assertEquals('IN_PROGRESS', $startedSession['status']);
         $this->assertArrayHasKey('workoutExercises', $startedSession);
     }
+
+    public function testStartedAndCompletedWorkoutDoesNotPollutePlanDays(): void
+    {
+        $client = static::createClient();
+        $user = $this->createAndLoginUser($client);
+
+        // 1. Utworzenie planu z 2 dniami (1 trening, 1 odpoczynek)
+        $payload = [
+            'name' => 'Cykl Testowy Czystości',
+            'cycleDays' => 2,
+            'isActive' => true,
+            'workouts' => [
+                [
+                    'name' => 'Dzień 1 - Siłowy',
+                    'dayNumber' => 1,
+                    'isRestDay' => false,
+                ],
+                [
+                    'name' => 'Dzień 2 - Odpoczynek',
+                    'dayNumber' => 2,
+                    'isRestDay' => true,
+                ]
+            ]
+        ];
+
+        $client->request('POST', '/api/training-plans', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
+        $this->assertResponseStatusCodeSame(201);
+        $planData = json_decode($client->getResponse()->getContent(), true);
+        $this->assertCount(2, $planData['workouts']);
+        $day1Id = $planData['workouts'][0]['id'];
+
+        // 2. Przed uruchomieniem: plan ma dokładnie 2 dni
+        $client->request('GET', '/api/training-plans/active');
+        $this->assertResponseIsSuccessful();
+        $activePlanBefore = json_decode($client->getResponse()->getContent(), true);
+        $this->assertCount(2, $activePlanBefore['workouts']);
+
+        // 3. Rozpoczęcie treningu z dnia 1 (tworzy sesję IN_PROGRESS)
+        $client->request('POST', "/api/training-plans/workouts/{$day1Id}/start");
+        $this->assertResponseStatusCodeSame(201);
+        $session = json_decode($client->getResponse()->getContent(), true);
+        $sessionId = $session['id'];
+        $this->assertEquals('IN_PROGRESS', $session['status']);
+
+        // 4. Po rozpoczęciu: aktywny plan NADAL ma dokładnie 2 dni (sesja IN_PROGRESS nie trafia do rozpiski planu)
+        $client->request('GET', '/api/training-plans/active');
+        $this->assertResponseIsSuccessful();
+        $activePlanInProgress = json_decode($client->getResponse()->getContent(), true);
+        $this->assertCount(2, $activePlanInProgress['workouts'], 'Sesja w toku nie może pojawiać się jako dodatkowy dzień w planie!');
+
+        // 5. Ukończenie sesji treningowej (zmiana statusu na COMPLETED)
+        $workoutRepo = static::getContainer()->get(\App\Repository\WorkoutRepository::class);
+        $workoutEntity = $workoutRepo->find($sessionId);
+        $this->assertNotNull($workoutEntity);
+        $workoutEntity->setStatus('COMPLETED');
+        $this->em->flush();
+
+        // 6. Po ukończeniu treningu: aktywny plan NADAL ma dokładnie 2 dni (ukończona sesja NIE pojawia się w planie!)
+        $client->request('GET', '/api/training-plans/active');
+        $this->assertResponseIsSuccessful();
+        $activePlanCompleted = json_decode($client->getResponse()->getContent(), true);
+        $this->assertCount(2, $activePlanCompleted['workouts'], 'Ukończony trening historyczny nie może pojawiać się w planie jako kolejny dzień!');
+
+        // 7. W liście treningów użytkownika (/api/workouts) jest ukończona sesja, a nie ma blueprintów planu
+        $client->request('GET', '/api/workouts');
+        $this->assertResponseIsSuccessful();
+        $allWorkouts = json_decode($client->getResponse()->getContent(), true);
+        $completedWorkoutsList = array_filter($allWorkouts, fn($w) => $w['id'] === $sessionId);
+        $this->assertCount(1, $completedWorkoutsList);
+
+        // Upewniamy się, że żaden element w /api/workouts nie jest szablonem o ID dnia
+        $blueprintInWorkouts = array_filter($allWorkouts, fn($w) => $w['status'] === 'PLANNED');
+        $this->assertCount(0, $blueprintInWorkouts, 'Szablony planu nie mogą zaśmiecać listy wykonanych treningów!');
+    }
 }

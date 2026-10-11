@@ -42,6 +42,38 @@ class DashboardApiController extends AbstractController
         ]);
     }
 
+    #[Route('/weight-logs/check', name: 'api_weight_logs_check', methods: ['GET'])]
+    public function checkWeightLogForDate(Request $request, WeightLogRepository $repository): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $dateStr = $request->query->get('date');
+        try {
+            $date = $dateStr ? new \DateTime($dateStr) : new \DateTime();
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Nieprawidłowy format daty.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $existing = $repository->findOneByUserAndDate($user, $date);
+
+        if (!$existing) {
+            return new JsonResponse([
+                'exists' => false,
+                'date' => $date->format('Y-m-d'),
+                'entry' => null,
+            ], Response::HTTP_OK);
+        }
+
+        return $this->json([
+            'exists' => true,
+            'date' => $date->format('Y-m-d'),
+            'entry' => $existing,
+        ], Response::HTTP_OK, [], [
+            'groups' => ['weight_log:read']
+        ]);
+    }
+
     #[Route('/weight-logs', name: 'api_weight_logs_create', methods: ['POST'])]
     public function createWeightLog(Request $request, DashboardService $dashboardService): JsonResponse
     {
@@ -68,10 +100,40 @@ class DashboardApiController extends AbstractController
         }
 
         $notes = isset($data['notes']) ? (string) $data['notes'] : null;
+        $allowUpdate = $data['allowUpdate'] ?? true;
 
-        $log = $dashboardService->recordWeight($user, $weight, $date, $notes);
+        $log = $dashboardService->recordWeight($user, $weight, $date, $notes, (bool) $allowUpdate);
 
         return $this->json($log, Response::HTTP_CREATED, [], [
+            'groups' => ['weight_log:read']
+        ]);
+    }
+
+    #[Route('/weight-logs/{id}', name: 'api_weight_logs_update', methods: ['PUT', 'PATCH'])]
+    public function updateWeightLog(int $id, Request $request, DashboardService $dashboardService): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data || !isset($data['weight'])) {
+            return new JsonResponse(['error' => 'Pole "weight" jest wymagane.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $weight = (float) $data['weight'];
+        if ($weight <= 0 || $weight > 500) {
+            return new JsonResponse(['error' => 'Nieprawidłowa wartość wagi (musi być między 1 a 500 kg).'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $notes = isset($data['notes']) ? (string) $data['notes'] : null;
+
+        try {
+            $log = $dashboardService->updateWeightLog($user, $id, $weight, $notes);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($log, Response::HTTP_OK, [], [
             'groups' => ['weight_log:read']
         ]);
     }

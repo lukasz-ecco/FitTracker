@@ -16,6 +16,8 @@ class UserProfileService
     public function updateProfile(User $user, array $data): bool
     {
         $updatableFields = [
+            'name' => 'setName',
+            'surrname' => 'setSurrname',
             'age' => 'setAge',
             'gender' => 'setGender',
             'height' => 'setHeight',
@@ -74,6 +76,6 @@ class UserProfileService
     
     public function getUpdatableFields(): array
     {
-        return ['age', 'gender', 'height', 'weight', 'profilePictureBase64'];
+        return ['name', 'surrname', 'age', 'gender', 'height', 'weight', 'profilePictureBase64'];
     }
 }

@@ -51,7 +51,9 @@ W celu zagwarantowania bezpieczeństwa i wygody użytkownika (aby sesja treningo
    - **Bezpieczne Wylogowanie (`AuthContext`):** Funkcja `logout()` atomowo usuwa oba klucze (`jwt_token`, `jwt_refresh_token`) z pamięci urządzenia.
 
 ### Pomiary Ciała
-- **BodyParts:** Słownik zawierający dostępne części ciała (np. klatka piersiowa, biceps, pas), które użytkownik może mierzyć.
+- **BodyParts:** Słownik zawierający dostępne części ciała (np. klatka piersiowa, ramiona, talia, biodra, uda), które użytkownik może mierzyć.
+  - *Atrybuty:* `name` (kanoniczna nazwa polska), `sortOrder` (kolejność anatomiczna od góry do dołu ciała: Szyja = 10, Klatka Piersiowa = 20, Ramiona = 40, Przedramiona = 50, Talia = 60, Biodra = 70, Uda = 80, Łydki = 90), `isMeasurable` (flaga boolean określająca, czy partia nadaje się do pomiarów obwodów w cm; wyklucza z pomiarów pozycje czysto atlasowe, np. "Ćwiczenia Cardio", oraz "Plecy", których obwód z definicji jest mierzony w ramach klatki piersiowej).
+  - *API & Kolejność:* Domyślne sortowanie w API Platform po `sortOrder ASC`. Aplikacja mobilna automatycznie filtruje pozycje (`isMeasurable: true`) i wyświetla kafelki oraz grupy pomiarów w logicznym porządku anatomicznym sylwetki.
 - **Meseurments (Pomiary):** Przechowuje pojedyncze wpisy z wynikami pomiarów dla konkretnego użytkownika. 
   - *Relacje:* Połączone z `User` (kto dokonał pomiaru) oraz `BodyParts` (jakiej części ciała dotyczy).
   - *Walidacja:* Posiada wewnętrzną logikę (Assert) uniemożliwiającą wprowadzenie pomiarów z datą w przyszłości lub starszą niż 7 dni.
@@ -105,12 +107,15 @@ W celu odseparowania schematów wielokrotnego użytku od historii odbytych treni
   - `creator`: Twórca planu (sam użytkownik lub trener tworzący plan dla podopiecznego),
   - `isActive`: Flaga określająca, czy cykl jest aktualnie realizowany przez użytkownika (aktywacja jednego planu automatycznie dezaktywuje pozostałe plany tego użytkownika),
   - `cycleDays`: Długość cyklu treningowego w dniach (domyślnie 7, w pełni konfigurowalna przez użytkownika: np. 3, 4, 5, 7, 14 dni).
-- **Struktura dni cyklu (z użyciem encji Workout):**
-  - Każda jednostka w cyklu reprezentowana jest przez encję `Workout` powiązaną z `trainingPlan` oraz numerem dnia w cyklu `dayNumber` (1, 2, ..., N).
+- **Struktura dni cyklu (z użyciem dedykowanej encji TrainingPlanDay - Wzorzec Blueprint vs Execution Log):**
+  - W celu eliminacji antywzorca mieszania założeń planu z historią treningów wprowadzono dedykowany model dni planu:
+    - **`TrainingPlanDay`:** Reprezentuje pozycję/dzień w cyklu (`dayNumber`), powiązany relacją `OneToMany` z `TrainingPlan` (`days`, aliased w API jako `workouts` dla kompatybilności wstecznej).
+    - **`TrainingPlanDayExercise` & `TrainingPlanDayExerciseSet`:** Dedykowane encje ćwiczeń i serii przypisanych do dnia planu.
+    - **Czysta historia w `Workout`:** Tabela `workout` zawiera wyłącznie rzeczywiste sesje treningowe użytkownika (`COMPLETED`, `IN_PROGRESS`, `DRAFT`). Sesje wykonane w ramach cyklu posiadają referencję `trainingPlan` oraz opcjonalnie `planDay`, ale **nie zaśmiecają już kolekcji dni planu** ani ogólnej listy historii sesji szablonami ze statusem `PLANNED`.
   - **Wiele aktywności w jednym dniu:** System umożliwia zaplanowanie kilku treningów lub kilku aktywności w ramach tego samego dnia cyklu (`dayNumber`), np. rano trening siłowy, a po południu spacer lub rower.
   - **Obowiązek zdefiniowania wszystkich dni cyklu:** Użytkownik ustalając cykl o długości $N$ dni musi określić każdy dzień od 1 do $N$. Dzień może zawierać trening siłowy, lekką aktywność regeneracyjną lub zostać oznaczony jako pełny dzień odpoczynku (Full Rest Day).
   - **Typy jednostek w cyklu:**
-    - **Trening siłowy (`activityType = 'WORKOUT'`, `isRestDay = false`):** Zawiera ćwiczenia (`WorkoutExercise`), serie (`WorkoutExerciseSet`), założenia obciążeniowe, powiązanie z szablonem (`WorkoutTemplate`) i może być uruchomiony w wizardzie aktywnego treningu.
+    - **Trening siłowy (`activityType = 'WORKOUT'`, `isRestDay = false`):** Zawiera ćwiczenia (`TrainingPlanDayExercise`), serie (`TrainingPlanDayExerciseSet`), powiązanie z szablonem (`WorkoutTemplate`) i może być uruchomiony w wizardzie aktywnego treningu.
     - **Lekka aktywność regeneracyjna (`isRestDay = true`, `activityType` np. `'WALK'`, `'CYCLING'`, `'RUNNING'`, `'SWIMMING'`, `'YOGA'`, `'STRETCHING'`, `'OTHER'`):** Zaplanowana aktywność o niskiej intensywności wspierająca regenerację (z opcjonalnym planowanym czasem trwania `plannedDurationMinutes` oraz dystansem `plannedDistanceKm`).
     - **Pełny dzień odpoczynku (`activityType = 'FULL_REST'`, `isRestDay = true`):** Całkowita regeneracja bez jednostki sportowej.
 - **Kalkulacja i Podpowiedzi Przerw Pomiędzy Treningami:**
@@ -124,17 +129,17 @@ W celu odseparowania schematów wielokrotnego użytku od historii odbytych treni
   - `POST /api/training-plans` – tworzenie nowego cyklu (z obsługą `cycleDays` oraz walidacją pokrycia wszystkich dni cyklu),
   - `PATCH /api/training-plans/{id}` – edycja nazwy, opisu, długości cyklu (`cycleDays`) i statusu,
   - `POST /api/training-plans/{id}/activate` – aktywacja cyklu,
-  - `POST /api/training-plans/{id}/workouts` – dodanie pozycji (treningu, lekkiej aktywności lub rest day) do cyklu,
-  - `POST /api/training-plans/workouts/{workoutId}/start` – atomowe uruchomienie treningu z planu (tworzy nową sesję `Workout` ze statusem `IN_PROGRESS`, klonując ćwiczenia i serie bez niszczenia blueprintu planu),
-  - `PATCH /api/training-plans/workouts/{workoutId}` – edycja pozycji w cyklu (w tym `activityType`, `plannedDurationMinutes`, `plannedDistanceKm`),
-  - `DELETE /api/training-plans/workouts/{workoutId}` – usunięcie pozycji z cyklu,
-  - `DELETE /api/training-plans/{id}` – usunięcie planu (powiązane treningi zachowują historię, a ich powiązanie z planem jest zerowane).
+  - `POST /api/training-plans/{id}/workouts` (oraz `/{id}/days`) – dodanie pozycji (treningu, lekkiej aktywności lub rest day) do cyklu jako `TrainingPlanDay`,
+  - `POST /api/training-plans/workouts/{dayId}/start` (oraz `/days/{dayId}/start`) – atomowe uruchomienie treningu z planu (tworzy nową sesję `Workout` ze statusem `IN_PROGRESS` z referencją `planDay`, klonując ćwiczenia i serie bez modyfikacji definicji planu),
+  - `PATCH /api/training-plans/workouts/{dayId}` (oraz `/days/{dayId}`) – edycja pozycji w cyklu (w tym `activityType`, `plannedDurationMinutes`, `plannedDistanceKm`),
+  - `DELETE /api/training-plans/workouts/{dayId}` (oraz `/days/{dayId}`) – usunięcie pozycji z cyklu,
+  - `DELETE /api/training-plans/{id}` – usunięcie planu (powiązane treningi historyczne zachowują historię, a ich powiązanie z planem jest zerowane).
 - **Rekomendacja i Rozpoczynanie Treningu z Planu:**
   - Przy rozpoczęciu nowego treningu (ekran `/workouts/new.tsx`) system prezentuje na samej górze dedykowaną kartę z rekomendowaną jednostką z aktywnego planu:
     1. **Zaległy trening (1. priorytet):** Jeśli użytkownik pominął zaplanowany trening w bieżącym tygodniu/okresie, system jako pierwszą opcję proponuje opuszczoną jednostkę z oznaczeniem `⚠️ Zaległy trening (Dzień X)`.
     2. **Dzisiejszy trening (2. priorytet):** Jeśli brak zaległości i na dziś przypada dzień treningowy, sugerowana jest dzisiejsza sesja `⚡ Dzisiejszy trening (Dzień X)`.
     3. **Kolejny w cyklu (3. priorytet):** Jeśli dzisiaj wypada dzień regeneracji (Rest Day) lub brak treningu na dziś, system sprawdza historię i proponuje kolejną sesję w kolejności `📅 Kolejny trening w Twoim cyklu (Dzień X)`.
-  - **Bezpieczeństwo Blueprintu Planu:** Kliknięcie *„Rozpocznij ten trening”* wywołuje `POST /api/training-plans/workouts/{id}/start`, tworząc niezależną jednostkę sesji `IN_PROGRESS`, dzięki czemu definicja w planie pozostaje nietknięta i może być realizowana w nieskończoność w kolejnych cyklach.
+  - **Bezpieczeństwo Blueprintu Planu:** Kliknięcie *„Rozpocznij ten trening”* wywołuje `POST /api/training-plans/workouts/{id}/start`, tworząc niezależną jednostkę sesji `Workout` ze statusem `IN_PROGRESS`, dzięki czemu definicja w `TrainingPlanDay` pozostaje nietknięta i może być realizowana w nieskończoność w kolejnych cyklach, nie pojawiając się jako duplikat na liście założeń planu.
   - **Elastyczność:** Użytkownik ma do dyspozycji modal *„Inny dzień z planu”* pozwalający uruchomić dowolny dzień cyklu, opcję *„Wczytaj do edycji”* ładującą ćwiczenia do draftu, jak i możliwość stworzenia klasycznego treningu spontanicznego poniżej.
 - **Architektura Modularna Serwisów Planu (`src/Service/TrainingPlan/`):**
   - Wyeliminowano antywzorzec „God Object” z `TrainingPlanService`, dzieląc odpowiedzialności zgodnie z zasadą Single Responsibility Principle (SRP):
@@ -145,27 +150,39 @@ W celu odseparowania schematów wielokrotnego użytku od historii odbytych treni
   - **Dedykowane testy jednostkowe:** Każdy z wyspecjalizowanych serwisów posiada niezależny zestaw testów jednostkowych (`TrainingPlanCycleTest`, `TrainingPlanRecommendationTest`, `TrainingPlanSessionLauncherTest`, `TrainingPlanServiceTest`), minimalizując złożoność mockowania i gwarantując stabilność logiki biznesowej.
 
 ### Interaktywny Dashboard Główny (`mobile/src/app/(app)/index.tsx`)
-Ekran startowy aplikacji mobilnej agreguje najważniejsze aspekty bieżącego dnia użytkownika w lekkim, modułowym układzie:
+Ekran startowy aplikacji mobilnej agreguje najważniejsze aspekty bieżącego dnia użytkownika w nowoczesnym, modularnym układzie o podwyższonej estetyce fitness:
+- **Pasek nagłówka z datownikiem:** Wyświetla pełną polską datę w formacie uppercase (np. *ŚRODA, 16 WRZEŚNIA*) z akcentem `#10B981`, powitaniem oraz awatarem ze zdjęciem profilowym użytkownika (z fallbackiem do inicjałów).
 1. **Aktywności z Planu na Dziś (`TodayPlanCard`):**
-   - Prezentuje zaplanowaną jednostkę treningową (trening siłowy, spacer, rower, czy pełny Rest Day).
-   - Wyróżnia zaległości (`OVERDUE`) z najwyższym priorytetem.
-   - Umożliwia natychmiastowe uruchomienie sesji (`Rozpocznij trening`) z bezpośrednim klonowaniem do aktywnego treningu.
+   - Nowoczesna karta ze statusem jednostki, liczbą ćwiczeń, responsywnym wskaźnikiem dnia cyklu i bezpośrednim CTA *„Rozpocznij trening”*.
+   - Wyróżnia zaległości (`OVERDUE`) z najwyższym priorytetem oraz relaksujący stan regeneracji dla dni odpoczynku.
 2. **Co Zrobiono Dzisiaj (`TodayCompletedCard`):**
-   - Podsumowuje dzisiejsze ukończone jednostki (`status = 'COMPLETED'`): łączny czas trwania sesji (`min`), sumaryczny podniesiony tonaż (`kg`), liczbę jednostek oraz listę wykonanych treningów ze skrótem do ich szczegółów.
-   - W przypadku braku aktywności wyświetla motywujący stan z szybką akcją przejścia do treningu spontanicznego.
+   - Przestronne, zoptymalizowane kafelki sumaryczne dla czasu sesji (`min`) oraz tonażu (`kg`) o zwięzłych etykietach (`CZAS SESJI`, `TONAŻ`) pozbawionych obcięć i kropek (`...`), z powiększonym paddingiem i czytelnym podziałem metryk.
+   - Lista zrealizowanych jednostek z zielonymi odznakami potwierdzenia i skrótami do ich podglądu.
 3. **Automatyczny Licznik Kroków z Telefonu (`StepsTrackerCard` & `PhoneStepsModal`):**
-   - Integracja ze sprzętowym sensorem telefonu (`expo-sensors` Pedometer): zlicza kroki od północy (`00:00:00`) automatycznie w tle bez drenowania baterii oraz aktualizuje licznik na żywo.
-   - Wylicza procent dziennego celu (np. 10 000 kroków), szacowane spalone kalorie (`kcal`) oraz przebyty dystans (`km`).
-   - Modal instruktażowy (`PhoneStepsModal`) wyjaśnia działanie czujnika sprzętowego oraz integrację z ekosystemami Google Health Connect i Apple HealthKit.
+   - Zaokrąglony pasek postępu ze wskaźnikiem procentowym oraz pulsującym wskaźnikiem synchronizacji na żywo.
+   - Nowoczesne kafelki metryk dla spalonych kalorii (`kcal`) z ikoną płomienia oraz przebytego dystansu (`km`) z ikoną trasy.
 4. **Waga i Parametry Ciała z Wykresem Trendu (`WeightTrackerCard`, `WeightChart`, `AddWeightModal`):**
-   - Prezentacja aktualnej wagi (`kg`), wzrostu (`cm`) oraz wskaźnika BMI z plakietką kategorii (Waga prawidłowa, Nadwaga, itp.).
-   - Dedykowana encja `WeightLog` w bazie danych rejestrująca historię pomiarów z datami i notatkami.
-   - Nowoczesny wykres słupkowo-liniowy zmian wagi w czasie z kalkulacją trendu (delta wagi).
-   - Szybki przycisk „+ Dodaj pomiar” z modalem do natychmiastowego zapisu nowej wagi (aktualizuje bazę `weight_log`, profil usera i wykres).
+   - Wyróżniony kafelek aktualnej wagi, wzrostu oraz BMI z plakietkami kategorii.
+   - Szybka akcja *„Zapisz”* otwierająca nowoczesny modal ze stepperem cyfrowym.
+   - Wykres liniowy (`WeightChart`) zmian wagi w czasie z trendem, wektorowymi liniami łączącymi i efektem *halo glow* na ostatnim punkcie.
+   - **Nowoczesny Formularz Wagi (`AddWeightModal`):** Dedykowany modal o podwyższonej estetyce z centralnym cyfrowym stepperem wagi (`38px`, przyciski `[-]` / `[+]` oraz szybkie chipy delty `-1.0`, `-0.1`, `+0.1`, `+1.0`), estetycznym wyborem dnia (pigułki z kalendarzem) oraz elegancką sekcją notatek.
+   - **Wykrywanie i edycja pomiarów z tego samego dnia:** Formularz `AddWeightModal` sprawdza, czy dla wybranej daty (lokalny format YYYY-MM-DD) istnieje już zarejestrowana waga (weryfikacja lokalna + bezpośredni fallback do `GET /api/weight-logs/check?date=...`). Jeśli pomiar istnieje, aplikacja:
+     - Wyświetla w modalu elegancki bursztynowy baner z odznaką dotychczasowej wagi i informacją o trybie korekty,
+     - Wstępnie uzupełnia pole wagi wartością z tego dnia i zmienia przycisk na „Zaktualizuj pomiar”,
+     - Po zatwierdzeniu wysyła aktualizację (PUT lub POST z `allowUpdate: true`).
 5. **Endpointy Backendowe Dashboardu i Wagi (`DashboardApiController`):**
    - `GET /api/dashboard/summary` – agreguje plan na dziś, ukończone sesje, kroki i metryki wagi w jednym zoptymalizowanym zapytaniu.
    - `GET /api/weight-logs` – pobiera pełną historię wpisów wagi użytkownika.
-   - `POST /api/weight-logs` – dodaje pomiar wagi, aktualizuje profil `User` i zwraca nowy wpis.
+   - `GET /api/weight-logs/check?date=YYYY-MM-DD` – sprawdza, czy użytkownik zarejestrował już wagę w danym dniu.
+   - `POST /api/weight-logs` – dodaje pomiar wagi (lub bezpiecznie aktualizuje wpis z tego samego dnia), aktualizuje profil `User` i zwraca rekord.
+   - `PUT /api/weight-logs/{id}` – bezpośrednia aktualizacja wskazanego pomiaru wagi.
+6. **Nowoczesny Formularz Edycji Profilu (`/profile/edit.tsx`):**
+   - **Modularna architektura React Native:** Zgodnie z zasadami SRP, ekran w `app/` stanowi lekki widok szkieletowy (< 150 linii), logika stanu i synchronizacji z API znajduje się w dedykowanym custom hooku `useEditProfile` (`src/hooks/useEditProfile.ts`), typy w `src/types/profile.ts`, a komponenty UI w `src/components/profile/`.
+   - **Interaktywny Awatar (`ProfileAvatarPicker`):** Prezentuje aktualne zdjęcie z backendu lub wybrane lokalnie z biblioteki zdjęć (`ImagePicker`), z miękką poświatą, inicjałami w przypadku braku zdjęcia oraz dedykowanym przyciskiem aparatu.
+   - **Nowoczesne Pola Formularza (`ProfileInputField`):** Stylizowane pola tekstowe z ikonami, dynamicznym podświetleniem obramowania i tła w stanie skupienia (focus) oraz etykietami jednostek (`lat`, `cm`, `kg`).
+   - **Selektor Płci (`ProfileGenderSelector`):** Interaktywne kafelki wyboru płci z dedykowanymi ikonami i kolorystyką (Mężczyzna / Kobieta).
+   - **Kalkulacja i Podgląd BMI Na Żywo (`ProfileBmiPreview`):** Przy wprowadzaniu wzrostu i wagi system w czasie rzeczywistym oblicza wskaźnik BMI i prezentuje go wraz z kolorową plakietką kategorii (Niedowaga, Waga prawidłowa, Nadwaga, Otyłość) i wskazówką zdrowotną.
+   - **Backend (`UserProfileService`, `PATCH /api/me`):** Zapewnia bezpieczną aktualizację imienia (`name`), nazwiska (`surrname`), wieku, płci, wzrostu, wagi oraz zdjęcia profilowego (base64) z natychmiastową synchronizacją stanu w `AuthContext`.
 
 ### Przebieg Treningu (Interaktywny interfejs)
 Sekcja `/training-plan` umożliwia przegląd i realizację treningów.

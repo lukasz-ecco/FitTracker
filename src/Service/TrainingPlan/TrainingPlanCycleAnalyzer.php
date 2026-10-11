@@ -14,7 +14,7 @@ class TrainingPlanCycleAnalyzer
             $workoutsByDay[$d] = [];
         }
 
-        foreach ($plan->getWorkouts() as $w) {
+        foreach ($plan->getDays() as $w) {
             $dayNum = $w->getDayNumber();
             if ($dayNum && $dayNum >= 1 && $dayNum <= $cycleDays) {
                 $workoutsByDay[$dayNum][] = $w;

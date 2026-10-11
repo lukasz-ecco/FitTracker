@@ -27,7 +27,7 @@ class TrainingPlanRecommendationService
         // Pobieramy wszystkie pozycje z planu będące treningami siłowymi
         $allWorkouts = [];
         $workoutDaysMap = [];
-        foreach ($plan->getWorkouts() as $w) {
+        foreach ($plan->getDays() as $w) {
             if (!$w->isRestDay() && ($w->getActivityType() === 'WORKOUT' || $w->getActivityType() === null)) {
                 $allWorkouts[] = $w;
                 $dayNum = $w->getDayNumber() ?? 1;

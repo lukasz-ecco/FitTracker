@@ -50,17 +50,25 @@ class TrainingPlan
     private ?\DateTimeImmutable $createdAt = null;
 
     /**
-     * @var Collection<int, Workout>
+     * @var Collection<int, TrainingPlanDay>
      */
-    #[ORM\OneToMany(targetEntity: Workout::class, mappedBy: 'trainingPlan', cascade: ['persist'])]
+    #[ORM\OneToMany(targetEntity: TrainingPlanDay::class, mappedBy: 'trainingPlan', orphanRemoval: true, cascade: ['persist', 'remove'])]
     #[ORM\OrderBy(['dayNumber' => 'ASC', 'id' => 'ASC'])]
     #[Groups(['plan:read:full'])]
-    private Collection $workouts;
+    private Collection $days;
+
+    /**
+     * @var Collection<int, Workout>
+     */
+    #[ORM\OneToMany(targetEntity: Workout::class, mappedBy: 'trainingPlan')]
+    #[ORM\OrderBy(['date' => 'DESC', 'id' => 'DESC'])]
+    private Collection $executedWorkouts;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->workouts = new ArrayCollection();
+        $this->days = new ArrayCollection();
+        $this->executedWorkouts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -146,31 +154,39 @@ class TrainingPlan
     }
 
     /**
-     * @return Collection<int, Workout>
+     * @return Collection<int, TrainingPlanDay>
      */
-    public function getWorkouts(): Collection
+    public function getDays(): Collection
     {
-        return $this->workouts;
+        return $this->days;
     }
 
-    public function addWorkout(Workout $workout): static
+    public function addDay(TrainingPlanDay $day): static
     {
-        if (!$this->workouts->contains($workout)) {
-            $this->workouts->add($workout);
-            $workout->setTrainingPlan($this);
+        if (!$this->days->contains($day)) {
+            $this->days->add($day);
+            $day->setTrainingPlan($this);
         }
 
         return $this;
     }
 
-    public function removeWorkout(Workout $workout): static
+    public function removeDay(TrainingPlanDay $day): static
     {
-        if ($this->workouts->removeElement($workout)) {
-            if ($workout->getTrainingPlan() === $this) {
-                $workout->setTrainingPlan(null);
+        if ($this->days->removeElement($day)) {
+            if ($day->getTrainingPlan() === $this) {
+                $day->setTrainingPlan(null);
             }
         }
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Workout>
+     */
+    public function getExecutedWorkouts(): Collection
+    {
+        return $this->executedWorkouts;
     }
 }

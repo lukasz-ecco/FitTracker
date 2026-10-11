@@ -16,7 +16,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
     operations: [
         new Get(),
         new GetCollection()
-    ]
+    ],
+    normalizationContext: ['groups' => ['measurement:read']],
+    order: ['sortOrder' => 'ASC', 'name' => 'ASC']
 )]
 class BodyParts
 {
@@ -29,6 +31,14 @@ class BodyParts
     #[ORM\Column(length: 255)]
     #[Groups(['measurement:read'])]
     private ?string $name = null;
+
+    #[ORM\Column(options: ['default' => 100])]
+    #[Groups(['measurement:read'])]
+    private int $sortOrder = 100;
+
+    #[ORM\Column(options: ['default' => true])]
+    #[Groups(['measurement:read'])]
+    private bool $isMeasurable = true;
 
     /**
      * @var Collection<int, Muscles>
@@ -54,6 +64,30 @@ class BodyParts
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSortOrder(): int
+    {
+        return $this->sortOrder;
+    }
+
+    public function setSortOrder(int $sortOrder): static
+    {
+        $this->sortOrder = $sortOrder;
+
+        return $this;
+    }
+
+    public function isMeasurable(): bool
+    {
+        return $this->isMeasurable;
+    }
+
+    public function setIsMeasurable(bool $isMeasurable): static
+    {
+        $this->isMeasurable = $isMeasurable;
 
         return $this;
     }

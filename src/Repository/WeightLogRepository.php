@@ -47,4 +47,25 @@ class WeightLogRepository extends ServiceEntityRepository
 
         return array_reverse($logs);
     }
+
+    /**
+     * Wyszukuje wpis wagi użytkownika z danego dnia
+     */
+    public function findOneByUserAndDate(User $user, \DateTimeInterface $date): ?WeightLog
+    {
+        $startOfDay = (new \DateTimeImmutable($date->format('Y-m-d')))->setTime(0, 0, 0);
+        $endOfDay = (new \DateTimeImmutable($date->format('Y-m-d')))->setTime(23, 59, 59);
+
+        return $this->createQueryBuilder('w')
+            ->andWhere('w.user = :user')
+            ->andWhere('w.date >= :start')
+            ->andWhere('w.date <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $startOfDay)
+            ->setParameter('end', $endOfDay)
+            ->orderBy('w.date', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

@@ -104,6 +104,10 @@ class DashboardServiceTest extends TestCase
         $user = new User();
         $user->setWeight(75);
 
+        $this->weightLogRepository->expects($this->once())
+            ->method('findOneByUserAndDate')
+            ->willReturn(null);
+
         $this->em->expects($this->once())->method('persist');
         $this->em->expects($this->once())->method('flush');
 
@@ -112,5 +116,58 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals(74.2, $log->getWeight());
         $this->assertEquals('Ranny pomiar', $log->getNotes());
         $this->assertEquals(74, $user->getWeight());
+    }
+
+    public function testRecordWeightUpdatesExistingLogForSameDay(): void
+    {
+        $user = new User();
+        $user->setWeight(75);
+
+        $existingLog = new WeightLog();
+        $existingLog->setUser($user);
+        $existingLog->setWeight(75.0);
+        $existingLog->setDate(new \DateTimeImmutable('2026-09-16 08:00:00'));
+
+        $this->weightLogRepository->expects($this->once())
+            ->method('findOneByUserAndDate')
+            ->willReturn($existingLog);
+
+        // Nie powinno tworzyć nowego (persist), tylko zaktualizować i flush
+        $this->em->expects($this->never())->method('persist');
+        $this->em->expects($this->once())->method('flush');
+
+        $updatedLog = $this->service->recordWeight($user, 73.5, new \DateTime('2026-09-16 18:00:00'), 'Korekta wagi', true);
+
+        $this->assertSame($existingLog, $updatedLog);
+        $this->assertEquals(73.5, $updatedLog->getWeight());
+        $this->assertEquals('Korekta wagi', $updatedLog->getNotes());
+        $this->assertEquals(74, $user->getWeight());
+    }
+
+    public function testUpdateWeightLogDirectly(): void
+    {
+        $user = new User();
+        $reflection = new \ReflectionClass(User::class);
+        $prop = $reflection->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($user, 1);
+
+        $existingLog = new WeightLog();
+        $existingLog->setUser($user);
+        $existingLog->setWeight(70.0);
+
+        $this->weightLogRepository->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn($existingLog);
+
+        $this->em->expects($this->once())->method('flush');
+
+        $result = $this->service->updateWeightLog($user, 10, 68.5, 'Nowa waga');
+
+        $this->assertSame($existingLog, $result);
+        $this->assertEquals(68.5, $result->getWeight());
+        $this->assertEquals('Nowa waga', $result->getNotes());
+        $this->assertEquals(69, $user->getWeight());
     }
 }

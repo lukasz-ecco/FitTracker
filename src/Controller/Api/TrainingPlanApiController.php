@@ -3,9 +3,9 @@
 namespace App\Controller\Api;
 
 use App\Entity\User;
+use App\Repository\TrainingPlanDayRepository;
 use App\Repository\TrainingPlanRepository;
 use App\Repository\UserRepository;
-use App\Repository\WorkoutRepository;
 use App\Service\TrainingPlanService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,12 +33,12 @@ class TrainingPlanApiController extends AbstractController
             $trainee = $userRepository->find((int) $traineeId);
             if ($trainee) {
                 $plans = $repository->findTrainerPlansForTrainee($user, $trainee);
-                return $this->json($plans, Response::HTTP_OK, [], ['groups' => ['plan:read', 'plan:read:full', 'workout:read']]);
+                return $this->json($plans, Response::HTTP_OK, [], ['groups' => ['plan:read', 'plan:read:full']]);
             }
         }
 
         $plans = $repository->findUserPlans($user);
-        return $this->json($plans, Response::HTTP_OK, [], ['groups' => ['plan:read', 'plan:read:full', 'workout:read']]);
+        return $this->json($plans, Response::HTTP_OK, [], ['groups' => ['plan:read', 'plan:read:full']]);
     }
 
     #[Route('/active', name: 'api_training_plans_active', methods: ['GET'])]
@@ -52,7 +52,7 @@ class TrainingPlanApiController extends AbstractController
             return new JsonResponse(null, Response::HTTP_OK);
         }
 
-        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'workout:read:full', 'exercise:read', 'template:read']]);
+        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'exercise:read', 'template:read']]);
     }
 
     #[Route('/active/recommended-workout', name: 'api_training_plans_recommended_workout', methods: ['GET'])]
@@ -67,19 +67,19 @@ class TrainingPlanApiController extends AbstractController
         }
 
         return $this->json($recommendation, Response::HTTP_OK, [], [
-            'groups' => ['plan:read', 'workout:read:full', 'exercise:read', 'template:read']
+            'groups' => ['plan:read', 'plan:read:full', 'exercise:read', 'template:read']
         ]);
     }
 
-    #[Route('/workouts/{workoutId}/start', name: 'api_training_plans_start_workout', requirements: ['workoutId' => '\d+'], methods: ['POST'])]
-    public function startWorkout(
-        int $workoutId,
+    #[Route('/days/{dayId}/start', name: 'api_training_plans_start_day', requirements: ['dayId' => '\d+'], methods: ['POST'])]
+    public function startDay(
+        int $dayId,
         TrainingPlanService $service
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
 
-        $session = $service->startWorkoutFromPlan($user, $workoutId);
+        $session = $service->startWorkoutFromPlan($user, $dayId);
         return $this->json($session, Response::HTTP_CREATED, [], [
             'groups' => ['workout:read:full', 'exercise:read', 'plan:read']
         ]);
@@ -96,7 +96,7 @@ class TrainingPlanApiController extends AbstractController
             throw new NotFoundHttpException('Nie znaleziono planu treningowego.');
         }
 
-        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'workout:read:full', 'exercise:read', 'template:read']]);
+        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'exercise:read', 'template:read']]);
     }
 
     #[Route('/{id}/cycle-analysis', name: 'api_training_plans_cycle_analysis', requirements: ['id' => '\d+'], methods: ['GET'])]
@@ -129,7 +129,7 @@ class TrainingPlanApiController extends AbstractController
         }
 
         $plan = $service->createPlan($user, $data);
-        return $this->json($plan, Response::HTTP_CREATED, [], ['groups' => ['plan:read:full', 'workout:read:full']]);
+        return $this->json($plan, Response::HTTP_CREATED, [], ['groups' => ['plan:read:full']]);
     }
 
     #[Route('/{id}', name: 'api_training_plans_update', requirements: ['id' => '\d+'], methods: ['PATCH', 'PUT'])]
@@ -153,7 +153,7 @@ class TrainingPlanApiController extends AbstractController
         }
 
         $plan = $service->updatePlan($plan, $user, $data);
-        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'workout:read:full']]);
+        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full']]);
     }
 
     #[Route('/{id}/activate', name: 'api_training_plans_activate', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -171,7 +171,7 @@ class TrainingPlanApiController extends AbstractController
         }
 
         $plan = $service->activatePlan($plan, $user);
-        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'workout:read:full']]);
+        return $this->json($plan, Response::HTTP_OK, [], ['groups' => ['plan:read:full']]);
     }
 
     #[Route('/{id}', name: 'api_training_plans_delete', requirements: ['id' => '\d+'], methods: ['DELETE'])]
@@ -192,8 +192,8 @@ class TrainingPlanApiController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{id}/workouts', name: 'api_training_plans_add_workout', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function addWorkout(
+    #[Route('/{id}/days', name: 'api_training_plans_add_day', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function addDay(
         int $id,
         Request $request,
         TrainingPlanRepository $repository,
@@ -212,23 +212,23 @@ class TrainingPlanApiController extends AbstractController
             return new JsonResponse(['error' => 'Brak danych JSON.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $workout = $service->addWorkoutToPlan($plan, $user, $data);
-        return $this->json($workout, Response::HTTP_CREATED, [], ['groups' => ['workout:read:full', 'plan:read', 'template:read']]);
+        $day = $service->addDayToPlan($plan, $user, $data);
+        return $this->json($day, Response::HTTP_CREATED, [], ['groups' => ['plan:read:full', 'exercise:read', 'template:read']]);
     }
 
-    #[Route('/workouts/{workoutId}', name: 'api_training_plans_update_workout', requirements: ['workoutId' => '\d+'], methods: ['PATCH', 'PUT'])]
-    public function updateWorkout(
-        int $workoutId,
+    #[Route('/days/{dayId}', name: 'api_training_plans_update_day', requirements: ['dayId' => '\d+'], methods: ['PATCH', 'PUT'])]
+    public function updateDay(
+        int $dayId,
         Request $request,
-        WorkoutRepository $workoutRepository,
+        TrainingPlanDayRepository $planDayRepository,
         TrainingPlanService $service
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
 
-        $workout = $workoutRepository->find($workoutId);
-        if (!$workout) {
-            throw new NotFoundHttpException('Nie znaleziono treningu.');
+        $day = $planDayRepository->find($dayId);
+        if (!$day) {
+            throw new NotFoundHttpException('Nie znaleziono dnia w planie.');
         }
 
         $data = json_decode($request->getContent(), true);
@@ -236,25 +236,25 @@ class TrainingPlanApiController extends AbstractController
             return new JsonResponse(['error' => 'Brak danych JSON.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $updated = $service->updatePlanWorkout($workout, $user, $data);
-        return $this->json($updated, Response::HTTP_OK, [], ['groups' => ['workout:read:full', 'plan:read', 'template:read']]);
+        $updated = $service->updatePlanDay($day, $user, $data);
+        return $this->json($updated, Response::HTTP_OK, [], ['groups' => ['plan:read:full', 'exercise:read', 'template:read']]);
     }
 
-    #[Route('/workouts/{workoutId}', name: 'api_training_plans_remove_workout', requirements: ['workoutId' => '\d+'], methods: ['DELETE'])]
-    public function removeWorkout(
-        int $workoutId,
-        WorkoutRepository $workoutRepository,
+    #[Route('/days/{dayId}', name: 'api_training_plans_remove_day', requirements: ['dayId' => '\d+'], methods: ['DELETE'])]
+    public function removeDay(
+        int $dayId,
+        TrainingPlanDayRepository $planDayRepository,
         TrainingPlanService $service
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
 
-        $workout = $workoutRepository->find($workoutId);
-        if (!$workout) {
-            throw new NotFoundHttpException('Nie znaleziono treningu.');
+        $day = $planDayRepository->find($dayId);
+        if (!$day) {
+            throw new NotFoundHttpException('Nie znaleziono dnia w planie.');
         }
 
-        $service->removeWorkoutFromPlan($workout, $user);
+        $service->removeDayFromPlan($day, $user);
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }

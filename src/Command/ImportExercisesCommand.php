@@ -432,24 +432,47 @@ class ImportExercisesCommand extends Command
         }
     }
 
+    private const BODY_PART_MAPPING = [
+        'back' => 'Plecy',
+        'chest' => 'Klatka Piersiowa',
+        'upper legs' => 'Uda',
+        'lower legs' => 'Łydki',
+        'waist' => 'Talia',
+        'shoulders' => 'Ramiona',
+        'upper arms' => 'Ramiona',
+        'lower arms' => 'Przedramiona',
+        'neck' => 'Szyja',
+        'cardio' => 'Ćwiczenia Cardio',
+    ];
+
     private function getOrCreateBodyPart(string $name): BodyParts
     {
-        $name = strtolower(trim($name));
+        $raw = strtolower(trim($name));
+        $canonicalName = self::BODY_PART_MAPPING[$raw] ?? ucfirst($raw);
 
         // Sprawdź lokalny cache (unika zbędnych query)
-        if (isset($this->bodyPartCache[$name])) {
-            return $this->bodyPartCache[$name];
+        if (isset($this->bodyPartCache[$canonicalName])) {
+            return $this->bodyPartCache[$canonicalName];
         }
 
-        $existing = $this->bodyPartsRepo->findOneBy(['name' => $name]);
+        $existing = $this->bodyPartsRepo->createQueryBuilder('b')
+            ->where('LOWER(b.name) = LOWER(:name)')
+            ->setParameter('name', $canonicalName)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
 
         if (!$existing) {
-            $existing = (new BodyParts())->setName($name);
+            $isNotMeasurable = str_contains(strtolower($canonicalName), 'cardio') || strtolower($canonicalName) === 'plecy';
+            $existing = (new BodyParts())
+                ->setName($canonicalName)
+                ->setIsMeasurable(!$isNotMeasurable)
+                ->setSortOrder($isNotMeasurable ? 999 : 100);
             $this->em->persist($existing);
             $this->em->flush();
         }
 
-        $this->bodyPartCache[$name] = $existing;
+        $this->bodyPartCache[$canonicalName] = $existing;
         return $existing;
     }
 

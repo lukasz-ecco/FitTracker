@@ -112,12 +112,21 @@ class DashboardService
         ];
     }
 
-    public function recordWeight(User $user, float $weight, ?\DateTimeInterface $date = null, ?string $notes = null): WeightLog
+    public function recordWeight(User $user, float $weight, ?\DateTimeInterface $date = null, ?string $notes = null, bool $updateIfExists = true): WeightLog
     {
         $logDate = $date ? \DateTimeImmutable::createFromInterface($date) : new \DateTimeImmutable();
 
-        $log = new WeightLog();
-        $log->setUser($user);
+        $log = null;
+        if ($updateIfExists) {
+            $log = $this->weightLogRepository->findOneByUserAndDate($user, $logDate);
+        }
+
+        if (!$log) {
+            $log = new WeightLog();
+            $log->setUser($user);
+            $this->em->persist($log);
+        }
+
         $log->setWeight($weight);
         $log->setDate($logDate);
         if ($notes !== null) {
@@ -127,7 +136,26 @@ class DashboardService
         // Aktualizacja bieżącej wagi na profilu usera
         $user->setWeight((int) round($weight));
 
-        $this->em->persist($log);
+        $this->em->flush();
+
+        return $log;
+    }
+
+    public function updateWeightLog(User $user, int $id, float $weight, ?string $notes = null): WeightLog
+    {
+        $log = $this->weightLogRepository->find($id);
+        if (!$log || $log->getUser()?->getId() !== $user->getId()) {
+            throw new \InvalidArgumentException('Nie znaleziono wskazanego pomiaru wagi.');
+        }
+
+        $log->setWeight($weight);
+        if ($notes !== null) {
+            $log->setNotes($notes);
+        }
+
+        // Aktualizacja bieżącej wagi na profilu usera
+        $user->setWeight((int) round($weight));
+
         $this->em->flush();
 
         return $log;

@@ -24,7 +24,8 @@ class WorkoutTemplateService
         private ValidatorInterface $validator,
         private WorkoutTemplateRepository $templateRepository,
         private WorkoutRepository $workoutRepository,
-        private ExercisesRepository $exercisesRepository
+        private ExercisesRepository $exercisesRepository,
+        private ?\App\Repository\TrainingPlanDayRepository $planDayRepository = null
     ) {}
 
     /**
@@ -116,6 +117,16 @@ class WorkoutTemplateService
     {
         $workout = $this->workoutRepository->findUserWorkout($workoutId, $user);
         if (!$workout) {
+            $planDay = $this->planDayRepository?->find($workoutId);
+            if ($planDay) {
+                $plan = $planDay->getTrainingPlan();
+                $isOwner = $plan->getUser()->getId() === $user->getId();
+                $isCreator = $plan->getCreator() && $plan->getCreator()->getId() === $user->getId();
+                if ($isOwner || $isCreator) {
+                    return $this->createTemplateFromPlanDay($user, $planDay, $customName);
+                }
+            }
+
             throw new NotFoundHttpException('Trening nie istnieje lub brak do niego dostępu.');
         }
 
@@ -135,6 +146,46 @@ class WorkoutTemplateService
 
             $setNumber = 1;
             foreach ($we->getWorkoutExerciseSets() as $set) {
+                $templateSet = new WorkoutTemplateExerciseSet();
+                $templateSet->setSetNumber($set->getSetNumber() ?? $setNumber++);
+                $templateSet->setReps($set->getReps());
+                $templateSet->setWeight($set->getWeight());
+                $templateSet->setTempo($set->getTempo());
+
+                $templateExercise->addSet($templateSet);
+            }
+
+            $template->addExercise($templateExercise);
+        }
+
+        $errors = $this->validator->validate($template);
+        if (count($errors) > 0) {
+            throw new ValidationException($errors);
+        }
+
+        $this->em->persist($template);
+        $this->em->flush();
+
+        return $template;
+    }
+
+    private function createTemplateFromPlanDay(User $user, \App\Entity\TrainingPlanDay $planDay, ?string $customName = null): WorkoutTemplate
+    {
+        $template = new WorkoutTemplate();
+        $name = !empty($customName) ? trim($customName) : ($planDay->getName() . ' (Szablon)');
+        $template->setName($name);
+        $template->setUser($user);
+        $template->setDescription($planDay->getDescription());
+
+        $order = 0;
+        foreach ($planDay->getExercises() as $de) {
+            $templateExercise = new WorkoutTemplateExercise();
+            $templateExercise->setExercise($de->getExercise());
+            $templateExercise->setOrderIndex($de->getOrderIndex() ?? $order++);
+            $templateExercise->setNotes($de->getNotes());
+
+            $setNumber = 1;
+            foreach ($de->getSets() as $set) {
                 $templateSet = new WorkoutTemplateExerciseSet();
                 $templateSet->setSetNumber($set->getSetNumber() ?? $setNumber++);
                 $templateSet->setReps($set->getReps());
